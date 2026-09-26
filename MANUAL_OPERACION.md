@@ -29,6 +29,16 @@
 > - Si alguien la conoce y deja el equipo, cambiarla en Supabase → Authentication → Users → admin@dineroya.app → Reset password.
 > - Cada persona del equipo debe tener **su propia cuenta** (ver sección 3). Nunca operar dos personas con la misma cuenta: la auditoría registra quién hizo cada cosa.
 
+### ¿Olvidaste una contraseña? (autoservicio)
+
+1. En la pantalla de login, pulsa **"¿Olvidaste tu contraseña?"**.
+2. Escribe **tu email** y pulsa **ENVIAR ENLACE**.
+3. Revisa tu correo (y la carpeta de spam): llega un enlace para crear una contraseña nueva.
+4. Al abrir el enlace, la app pide la nueva contraseña (dos veces) y te devuelve al login.
+
+> ⚠️ El enlace de recuperación **llega solo a emails reales**. Cuentas con dominio inventado (ej: `@dineroya.app`) no pueden recibirlo — para esas, el admin técnico cambia la contraseña en Supabase → Authentication → Users.
+> ⏱️ En el plan gratuito de Supabase hay un límite de emails por hora; si aparece "email rate limit exceeded", espera un rato y reintenta.
+
 ---
 
 ## 2. Roles: quién puede hacer qué
@@ -110,8 +120,7 @@ En cada caso de la cola (o desde Préstamos → GESTIONAR):
 
 ### "No puedo entrar" / usuario o contraseña incorrectos
 - Revisa mayúsculas y que el email sea el correcto.
-- Si olvidaste tu contraseña: pídesela a un **administrador** (Supabase → Authentication → Users → tu email → *Reset password*). No hay enlace de recuperación en la app todavía.
-- Si tu cuenta fue desactivada: el admin la reactiva en **Equipo**.
+- Si olvidaste tu contraseña: usa **"¿Olvidaste tu contraseña?"** en la pantalla de login (ver sección 1). Si tu email no puede recibir correo, pídele al admin técnico el cambio en Supabase.
 
 ### "Database error saving new user" al registrarte
 - El registro pudo quedar a medias. Espera 1 minuto y prueba **entrar** directamente; si no funciona, avisa al admin técnico para revisar Supabase.
