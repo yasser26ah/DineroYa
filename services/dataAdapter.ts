@@ -67,6 +67,8 @@ export interface DataAdapter {
   getSession(): Promise<AuthUser | null>;
   signIn(email: string, password: string): Promise<AuthUser>;
   signUp(email: string, password: string, fullName: string): Promise<void>;
+  resetPassword(email: string): Promise<void>;
+  updatePassword(newPassword: string): Promise<void>;
   signOut(): Promise<void>;
 
   // Lectura
@@ -307,6 +309,14 @@ export class LocalDataAdapter implements DataAdapter {
 
   async signUp(email: string, _password: string, fullName: string): Promise<void> {
     write(LS.session, { ...DEMO_USER, email, fullName });
+  }
+
+  async resetPassword(_email: string): Promise<void> {
+    throw new Error('La recuperación de contraseña requiere el modo multiusuario (Supabase).');
+  }
+
+  async updatePassword(_newPassword: string): Promise<void> {
+    throw new Error('Cambiar contraseña requiere el modo multiusuario (Supabase).');
   }
 
   async signOut(): Promise<void> {
@@ -648,6 +658,18 @@ export class SupabaseAdapter implements DataAdapter {
       email, password,
       options: { data: { full_name: fullName } },
     });
+    if (error) throw new Error(error.message);
+  }
+
+  async resetPassword(email: string): Promise<void> {
+    const { error } = await this.db.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/?reset=1`,
+    });
+    if (error) throw new Error(error.message);
+  }
+
+  async updatePassword(newPassword: string): Promise<void> {
+    const { error } = await this.db.auth.updateUser({ password: newPassword });
     if (error) throw new Error(error.message);
   }
 
