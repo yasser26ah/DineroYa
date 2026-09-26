@@ -128,20 +128,20 @@ export const LoansPage: React.FC = () => {
                         {loan.installmentsCount} cuotas {FREQUENCY_LABELS[loan.frequency].toLowerCase()} · desde {fmtDate(loan.createdAt)}
                       </p>
                     </div>
-                    <div className="flex items-center gap-6">
-                      <div className="text-right">
+                    <div className="flex lg:items-center gap-6 lg:gap-6 overflow-x-auto -mx-1 px-1 lg:overflow-visible lg:mx-0 lg:px-0 pb-1 lg:pb-0">
+                      <div className="text-right shrink-0">
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Capital</p>
                         <p className="font-black text-slate-900">{fmtMoney(loan.principal, cur)}</p>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right shrink-0">
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Interés</p>
                         <p className="font-black text-slate-900">{loan.interestRate}%</p>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right shrink-0">
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Cuotas</p>
                         <p className="font-black text-slate-900">{paidCount}/{loan.installmentsCount}</p>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right shrink-0">
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pendiente</p>
                         <p className={`text-2xl font-black ${outstanding > 0 ? 'text-indigo-600' : 'text-emerald-600'}`}>{fmtMoney(outstanding, cur)}</p>
                       </div>
@@ -267,7 +267,7 @@ export const LoansPage: React.FC = () => {
                 )}
 
                 {/* Acciones */}
-                <div className="border-t border-slate-100 px-6 lg:px-7 py-4 bg-white flex flex-wrap gap-2 items-center">
+                <div className="border-t border-slate-100 px-4 lg:px-7 py-4 bg-white flex flex-wrap gap-2 items-center sticky bottom-0">
                   {(loan.status === 'active' || loan.status === 'overdue') && (
                     <>
                       <Btn onClick={() => setModal({ kind: 'payment', loan })} className="flex items-center gap-1.5"><Banknote className="w-3.5 h-3.5" /> Cobrar</Btn>

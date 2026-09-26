@@ -12,6 +12,7 @@ export const EMPTY_SETTINGS: AppSettings = {
   currency: '$',
   defaultInterestRate: 15,
   companyName: 'FinanzaPro',
+  moraRate: 5,
 };
 
 // --- Fórmulas ---------------------------------------------------------------
@@ -23,6 +24,34 @@ export const riskSuggestedRate = (clientRisk: number, baseRate: number): number 
   if (clientRisk > 80) return Math.max(0, baseRate - 5);
   if (clientRisk >= 40) return baseRate;
   return baseRate + 10;
+};
+
+/**
+ * Interés de mora acumulado de un cliente: saldo vencido de cada cuota ×
+ * tasa de mora mensual × (días vencidos / 30). Requiere moraRate > 0 en
+ * configuración; coincide con fn_client_mora() en Supabase.
+ */
+export const clientMoraAmount = (
+  clientId: string,
+  loans: Loan[],
+  installments: Installment[],
+  moraRate: number,
+  today = todayISO()
+): number => {
+  if (moraRate <= 0) return 0;
+  const activeLoanIds = new Set(
+    loans.filter(l => l.clientId === clientId && (l.status === 'active' || l.status === 'overdue')).map(l => l.id)
+  );
+  let mora = 0;
+  installments.forEach(i => {
+    if (!activeLoanIds.has(i.loanId)) return;
+    if (i.status === 'paid' || i.status === 'waived') return;
+    if (i.dueDate >= today) return;
+    const days = daysBetween(i.dueDate, today);
+    const saldo = Math.max(i.amountDue - i.amountPaid, 0);
+    mora += (saldo * moraRate / 100) * (days / 30);
+  });
+  return Number(mora.toFixed(2));
 };
 
 // --- Calendario de cuotas -----------------------------------------------------
@@ -94,6 +123,12 @@ export const computeRiskScore = (clientId: string, loans: Loan[], installments: 
     if (loan.status === 'paid') score += 15;
     if (hasOverdue) score -= 40;
   });
+  // Abonos (cuotas parciales con pagos registrados) también mejoran el riesgo, tope +15.
+  const partialCount = installments.filter(i => {
+    const loan = clientLoans.find(l => l.id === i.loanId);
+    return loan && i.amountPaid > 0 && i.amountPaid < i.amountDue;
+  }).length;
+  score += Math.min(15, partialCount * 5);
   return Math.min(100, Math.max(1, score));
 };
 

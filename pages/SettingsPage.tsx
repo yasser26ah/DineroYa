@@ -24,6 +24,7 @@ export const SettingsPage: React.FC = () => {
       companyName: String(fd.get('companyName') ?? '').trim() || 'FinanzaPro',
       currency: String(fd.get('currency') ?? '$').trim() || '$',
       defaultInterestRate: Number(fd.get('rate') ?? 15),
+      moraRate: Math.max(0, Number(fd.get('moraRate') ?? 0)),
     });
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
@@ -74,7 +75,7 @@ export const SettingsPage: React.FC = () => {
           </div>
         </div>
 
-        <form onSubmit={submit} className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <form onSubmit={submit} className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
           <Field label="Nombre de la financiera">
             <input name="companyName" defaultValue={settings.companyName} className={inputCls} />
           </Field>
@@ -83,6 +84,16 @@ export const SettingsPage: React.FC = () => {
           </Field>
           <Field label="Interés base (%)">
             <input name="rate" type="number" min="0" step="0.1" defaultValue={settings.defaultInterestRate} className={inputCls} />
+          </Field>
+          <Field label="Mora mensual (% sobre saldo vencido)">
+            <input
+              name="moraRate" type="number" min="0" step="0.1"
+              defaultValue={settings.moraRate ?? 0}
+              className={inputCls}
+            />
+            <p className="text-[10px] text-slate-400 font-bold mt-1 leading-relaxed">
+              Se cobra proporcional a los días vencidos. 0 = sin mora. Ej: 5% → $1.000 vencido 15 días genera $25.
+            </p>
           </Field>
           <div className="md:col-span-3 flex items-center gap-4">
             <Btn type="submit">Guardar cambios</Btn>

@@ -365,11 +365,21 @@ export const PaymentModal: React.FC<{
               className={`${inputCls} pl-12 text-xl`}
             />
           </div>
-          {next && Number(amount) !== next.amountDue - next.amountPaid && (
-            <button type="button" onClick={() => setAmount(String(next.amountDue - next.amountPaid))} className="text-[11px] font-black text-indigo-600 uppercase tracking-widest text-left">
-              Usar cuota exacta ({fmtMoney(next.amountDue - next.amountPaid, settings.currency)})
-            </button>
-          )}
+          <div className="flex flex-wrap gap-2 mt-2">
+            {next && Number(amount) !== next.amountDue - next.amountPaid && (
+              <button type="button" onClick={() => setAmount(String(next.amountDue - next.amountPaid))} className="text-[11px] font-black text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-xl uppercase tracking-widest hover:bg-indigo-100">
+                Cuota exacta ({fmtMoney(next.amountDue - next.amountPaid, settings.currency)})
+              </button>
+            )}
+            {outstanding > 0 && Number(amount) !== outstanding && (
+              <button type="button" onClick={() => setAmount(String(outstanding))} className="text-[11px] font-black text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-xl uppercase tracking-widest hover:bg-emerald-100">
+                Liquidar todo ({fmtMoney(outstanding, settings.currency)})
+              </button>
+            )}
+          </div>
+          <p className="text-[11px] text-slate-400 font-bold mt-2 leading-relaxed">
+            Puedes registrar <strong>abonos parciales</strong>: el monto que digites se aplica automáticamente a la cuota más antigua pendiente (FIFO). Sirve para pagos anticipados o abonos que no cubren una cuota completa.
+          </p>
         </Field>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <Field label="Método">

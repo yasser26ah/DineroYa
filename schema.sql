@@ -364,7 +364,7 @@ CREATE OR REPLACE FUNCTION fn_recalculate_client_risk()
 RETURNS TRIGGER AS $$
 DECLARE
   v_client UUID := CASE TG_OP WHEN 'DELETE' THEN OLD.client_id ELSE NEW.client_id END;
-  v_paid INTEGER; v_overdue INTEGER; v_score INTEGER := 50;
+  v_paid INTEGER; v_partials INTEGER; v_overdue INTEGER; v_score INTEGER := 50;
 BEGIN
   SELECT COUNT(*) INTO v_paid FROM loans
   WHERE client_id = v_client AND status = 'paid';
@@ -375,7 +375,14 @@ BEGIN
         SELECT 1 FROM installments i
         WHERE i.loan_id = loans.id AND i.due_date < CURRENT_DATE
           AND i.status NOT IN ('paid','waived'))));
-  v_score := v_score + (v_paid * 15) - (v_overdue * 40);
+  -- Abonos: préstamos con pagos que dejaron cuotas parciales también mejoran el riesgo (tope +15).
+  SELECT COUNT(*) INTO v_partials FROM payments p
+  WHERE p.client_id = v_client
+    AND EXISTS (
+      SELECT 1 FROM installments i
+      WHERE i.loan_id = p.loan_id AND i.amount_paid > 0 AND i.amount_paid < i.amount_due
+    );
+  v_score := v_score + (v_paid * 15) + (LEAST(v_partials, 3) * 5) - (v_overdue * 40);
   v_score := GREATEST(1, LEAST(100, v_score));
   UPDATE clients SET risk_score = v_score WHERE id = v_client;
   RETURN NULL;
@@ -414,9 +421,33 @@ CREATE TABLE IF NOT EXISTS app_settings (
   currency VARCHAR(5) NOT NULL DEFAULT '$',
   default_interest_rate DECIMAL(5,2) NOT NULL DEFAULT 15,
   company_name VARCHAR(255) NOT NULL DEFAULT 'FinanzaPro',
+  mora_rate DECIMAL(5,2) NOT NULL DEFAULT 5,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 INSERT INTO app_settings (id) VALUES (1) ON CONFLICT DO NOTHING;
+ALTER TABLE app_settings ADD COLUMN IF NOT EXISTS mora_rate DECIMAL(5,2) NOT NULL DEFAULT 5;
+
+-- Mora acumulada de un cliente: saldo vencido × mora_rate mensual × (días/30).
+CREATE OR REPLACE FUNCTION fn_client_mora(p_client UUID)
+RETURNS DECIMAL
+LANGUAGE sql
+STABLE
+SECURITY DEFINER SET search_path = public
+AS $$
+  SELECT COALESCE(
+    SUM(
+      GREATEST(i.amount_due - i.amount_paid, 0) *
+      (SELECT s.mora_rate FROM app_settings s WHERE s.id = 1) / 100.0 *
+      GREATEST((CURRENT_DATE - i.due_date), 0) / 30.0
+    ), 0)
+  FROM installments i
+  JOIN loans l ON l.id = i.loan_id
+  WHERE l.client_id = p_client
+    AND i.status NOT IN ('paid','waived')
+    AND l.status IN ('active','overdue')
+    AND i.due_date < CURRENT_DATE;
+$$;
+GRANT EXECUTE ON FUNCTION fn_client_mora(UUID) TO authenticated;
 
 -- ---------------------------------------------------------------------------
 -- 10. Vistas operativas

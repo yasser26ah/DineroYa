@@ -105,6 +105,8 @@ export interface AppSettings {
   currency: string;
   defaultInterestRate: number;
   companyName: string;
+  /** Tasa de mora mensual (%) aplicada sobre saldos vencidos. 0 = sin mora. */
+  moraRate: number;
 }
 
 // --- Derivados / reportes ---

@@ -7,6 +7,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   currency: '$',
   defaultInterestRate: 15,
   companyName: 'FinanzaPro',
+  moraRate: 5,
 };
 
 export const fmtMoney = (v: number, currency = '$') =>

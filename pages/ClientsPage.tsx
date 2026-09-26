@@ -8,12 +8,13 @@ import {
   Card, PageHeader, EmptyState, Btn, RiskBadge, SearchBar, Modal, Field, inputCls, StatusBadge, loanStatusStyle,
 } from '../components/ui';
 import { ClientFormModal, CreateLoanModal } from '../components/modals';
-import { loanOutstanding } from '../lib/engine';
+import { loanOutstanding, clientMoraAmount } from '../lib/engine';
 import { fmtDate, fmtMoney, waLink } from '../lib/format';
 import { Client, LOAN_STATUS_LABELS, PAYMENT_METHOD_LABELS } from '../types';
 
 export const ClientsPage: React.FC = () => {
   const { clients, loans, installments, payments, settings } = useData();
+  const moraOf = (clientId: string) => clientMoraAmount(clientId, loans, installments, settings.moraRate ?? 0);
   const cur = settings.currency;
   const [search, setSearch] = useState('');
   const [formModal, setFormModal] = useState<{ open: boolean; client?: Client }>({ open: false });
@@ -132,10 +133,16 @@ export const ClientsPage: React.FC = () => {
                 <span className="text-sm font-medium text-slate-500">Deuda vigente:</span>
                 <span className="font-black text-indigo-600">{fmtMoney(debtOf(detail.id), cur)}</span>
               </div>
-              <div className="flex justify-between items-center mb-3">
+              <div className="flex justify-between items-center mb-1">
                 <span className="text-sm font-medium text-slate-500">Préstamos totales:</span>
                 <span className="font-black text-slate-900">{loans.filter(l => l.clientId === detail.id).length}</span>
               </div>
+              {moraOf(detail.id) > 0 && (
+                <div className="flex justify-between items-center mt-3 bg-rose-50 border border-rose-100 rounded-2xl px-4 py-2.5">
+                  <span className="text-xs font-black text-rose-500 uppercase tracking-widest">Mora acumulada ({settings.moraRate}% mensual):</span>
+                  <span className="font-black text-rose-600">{fmtMoney(moraOf(detail.id), cur)}</span>
+                </div>
+              )}
               <div className="space-y-2 max-h-56 overflow-y-auto mt-4">
                 {loans.filter(l => l.clientId === detail.id).map(l => {
                   const out = loanOutstanding(l.id, installments);

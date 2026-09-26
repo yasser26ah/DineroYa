@@ -80,7 +80,38 @@ export const AuditPage: React.FC = () => {
       {visible.length === 0 ? (
         <EmptyState icon={ScrollText} title="Sin eventos" hint="No hay eventos que coincidan con los filtros aplicados." />
       ) : (
-        <Card className="overflow-hidden overflow-x-auto">
+        <>
+        {/* Móvil: tarjetas apiladas */}
+        <div className="md:hidden flex flex-col gap-3">
+          {visible.slice(0, 300).map(ev => (
+            <div key={ev.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm">
+              <button
+                onClick={() => setExpanded(expanded === ev.id ? null : ev.id)}
+                className="w-full text-left p-4"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-md ${ACTION_STYLE[ev.action] ?? 'bg-slate-100 text-slate-600'}`}>{ev.action}</span>
+                  <span className="text-[10px] font-bold text-slate-400">{fmtDateTime(ev.createdAt)}</span>
+                </div>
+                <p className="text-sm font-black text-slate-800 mt-2">{ENTITY_LABELS[ev.entity] ?? ev.entity}</p>
+                <p className="text-xs font-bold text-slate-500">{ev.actorName ?? 'Sistema'}</p>
+                <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mt-2 flex items-center gap-1">
+                  {expanded === ev.id ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />} Ver detalle
+                </p>
+              </button>
+              {expanded === ev.id && (
+                <div className="px-4 pb-4">
+                  <pre className="text-[10px] leading-relaxed text-slate-600 whitespace-pre-wrap break-all max-h-60 overflow-y-auto bg-slate-50 rounded-xl p-3">
+                    {JSON.stringify(ev.details, null, 2)}
+                  </pre>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Desktop: tabla */}
+        <Card className="overflow-hidden overflow-x-auto hidden md:block">
           <table className="w-full text-left min-w-[760px]">
             <thead className="bg-slate-50/80 border-b border-slate-100">
               <tr>
@@ -125,6 +156,7 @@ export const AuditPage: React.FC = () => {
             </tbody>
           </table>
         </Card>
+        </>
       )}
     </div>
   );

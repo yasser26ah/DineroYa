@@ -14,7 +14,7 @@ import {
 } from '../types';
 import { DEFAULT_SETTINGS, todayISO } from '../lib/format';
 import {
-  EMPTY_SETTINGS, generateSchedule, computeRiskScore, loanOutstanding,
+  EMPTY_SETTINGS, generateSchedule, computeRiskScore, loanOutstanding, clientMoraAmount,
 } from '../lib/engine';
 
 export interface AuthUser {
@@ -80,6 +80,7 @@ export interface DataAdapter {
   listActivities(): Promise<CollectionActivity[]>;
   listAuditEvents(limit?: number): Promise<AuditEvent[]>;
   getSettings(): Promise<AppSettings>;
+  getClientMora(clientId: string): Promise<number>;
 
   // Escritura
   createClient(input: NewClientInput): Promise<Client>;
@@ -359,6 +360,10 @@ export class LocalDataAdapter implements DataAdapter {
 
   async getSettings(): Promise<AppSettings> {
     return { ...this.settings };
+  }
+
+  async getClientMora(clientId: string): Promise<number> {
+    return clientMoraAmount(clientId, this.loans, this.installments, this.settings.moraRate ?? 5);
   }
 
   // --- Escritura -----------------------------------------------------------------
@@ -728,7 +733,15 @@ export class SupabaseAdapter implements DataAdapter {
       currency: data.currency,
       defaultInterestRate: Number(data.default_interest_rate),
       companyName: data.company_name,
+      moraRate: data.mora_rate !== undefined && data.mora_rate !== null ? Number(data.mora_rate) : 5,
     };
+  }
+
+  /** Interés de mora acumulado de un cliente (RPC fn_client_mora). */
+  async getClientMora(clientId: string): Promise<number> {
+    const { data, error } = await this.db.rpc('fn_client_mora', { p_client: clientId });
+    if (error) return 0;
+    return Number(data ?? 0);
   }
 
   // --- Escritura -----------------------------------------------------------------
@@ -826,6 +839,7 @@ export class SupabaseAdapter implements DataAdapter {
     if (patch.currency !== undefined) db.currency = patch.currency;
     if (patch.defaultInterestRate !== undefined) db.default_interest_rate = patch.defaultInterestRate;
     if (patch.companyName !== undefined) db.company_name = patch.companyName;
+    if (patch.moraRate !== undefined) db.mora_rate = patch.moraRate;
     const { error } = await this.db.from('app_settings').update(db).eq('id', 1);
     if (error) throw new Error(error.message);
     return this.getSettings();
