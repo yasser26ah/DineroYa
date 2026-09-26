@@ -55,7 +55,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 DROP TRIGGER IF EXISTS trg_first_user_becomes_admin ON profiles;
 CREATE TRIGGER trg_first_user_becomes_admin
@@ -69,7 +69,7 @@ BEGIN
   VALUES (NEW.id, COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.email));
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
@@ -162,7 +162,7 @@ BEGIN
       ELSE (v_due + v_step)::date END;
   END LOOP;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- ---------------------------------------------------------------------------
 -- 5. Pagos y asignación a cuotas
@@ -230,7 +230,7 @@ BEGIN
     v_apply := LEAST(v_remaining, v_inst.amount_due - v_inst.amount_paid);
     UPDATE installments
       SET amount_paid = amount_paid + v_apply,
-          status = CASE WHEN amount_paid + v_apply >= amount_due THEN 'paid' ELSE 'partial' END,
+          status = (CASE WHEN amount_paid + v_apply >= amount_due THEN 'paid' ELSE 'partial' END)::installment_status,
           paid_at = CASE WHEN amount_paid + v_apply >= amount_due THEN NOW() ELSE paid_at END
     WHERE id = v_inst.id;
     INSERT INTO payment_allocations (payment_id, installment_id, amount)
@@ -248,7 +248,7 @@ BEGIN
 
   RETURN v_payment_id;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- Anulación de pago: revierte asignaciones y saldos, dejando traza.
 CREATE OR REPLACE FUNCTION fn_void_payment(p_payment_id UUID, p_reason TEXT)
@@ -273,7 +273,7 @@ BEGIN
   LOOP
     UPDATE installments
       SET amount_paid = GREATEST(0, amount_paid - v_alloc.amount),
-          status = CASE WHEN amount_paid - v_alloc.amount <= 0 THEN 'pending' ELSE 'partial' END,
+          status = (CASE WHEN amount_paid - v_alloc.amount <= 0 THEN 'pending' ELSE 'partial' END)::installment_status,
           paid_at = NULL
     WHERE id = v_alloc.installment_id;
   END LOOP;
@@ -284,7 +284,7 @@ BEGIN
   WHERE id = v_loan AND status = 'paid'
     AND EXISTS (SELECT 1 FROM installments WHERE loan_id = v_loan AND status NOT IN ('paid','waived'));
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- ---------------------------------------------------------------------------
 -- 6. Gestiones de cobranza
@@ -336,10 +336,10 @@ BEGIN
     ELSE jsonb_build_object('before', to_jsonb(OLD), 'after', to_jsonb(NEW))
   END;
   INSERT INTO audit_events (entity, entity_id, action, actor, actor_name, details)
-  VALUES (TG_TABLE_NAME, COALESCE(NEW.id, OLD.id), v_action, v_actor, v_actor_name, v_details);
+  VALUES (TG_TABLE_NAME, CASE WHEN TG_OP = 'DELETE' THEN OLD.id ELSE NEW.id END, v_action, v_actor, v_actor_name, v_details);
   RETURN NULL;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 DROP TRIGGER IF EXISTS trg_audit_clients ON clients;
 CREATE TRIGGER trg_audit_clients AFTER INSERT OR DELETE OR UPDATE ON clients
@@ -363,7 +363,7 @@ FOR EACH ROW EXECUTE FUNCTION fn_audit_log();
 CREATE OR REPLACE FUNCTION fn_recalculate_client_risk()
 RETURNS TRIGGER AS $$
 DECLARE
-  v_client UUID := COALESCE(NEW.client_id, OLD.client_id);
+  v_client UUID := CASE TG_OP WHEN 'DELETE' THEN OLD.client_id ELSE NEW.client_id END;
   v_paid INTEGER; v_overdue INTEGER; v_score INTEGER := 50;
 BEGIN
   SELECT COUNT(*) INTO v_paid FROM loans
@@ -380,7 +380,7 @@ BEGIN
   UPDATE clients SET risk_score = v_score WHERE id = v_client;
   RETURN NULL;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 DROP TRIGGER IF EXISTS trg_risk_loans ON loans;
 CREATE TRIGGER trg_risk_loans AFTER INSERT OR DELETE OR UPDATE ON loans
@@ -404,7 +404,7 @@ BEGIN
         AND i.status NOT IN ('paid','waived'));
   RETURN v_count;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- ---------------------------------------------------------------------------
 -- 9. Configuración de la app
@@ -421,8 +421,8 @@ INSERT INTO app_settings (id) VALUES (1) ON CONFLICT DO NOTHING;
 -- ---------------------------------------------------------------------------
 -- 10. Vistas operativas
 -- ---------------------------------------------------------------------------
--- Saldo pendiente por préstamo
-CREATE OR REPLACE VIEW loan_balances AS
+-- Saldo pendiente por préstamo (security_invoked: respeta RLS del llamador)
+CREATE OR REPLACE VIEW loan_balances WITH (security_invoker = true) AS
 SELECT
   l.id AS loan_id,
   l.client_id,
@@ -432,7 +432,7 @@ LEFT JOIN installments i ON i.loan_id = l.id
 GROUP BY l.id, l.client_id;
 
 -- Cartera con envejecimiento de mora
-CREATE OR REPLACE VIEW aging_report AS
+CREATE OR REPLACE VIEW aging_report WITH (security_invoker = true) AS
 SELECT
   l.id AS loan_id,
   l.client_id,
@@ -459,7 +459,7 @@ LEFT JOIN installments i ON i.loan_id = l.id
 GROUP BY l.id, l.client_id, c.name, c.phone, l.status, l.assigned_to, b.outstanding;
 
 -- Cola de cobranza del día: vencidas + vencen hoy, con su gestión más reciente
-CREATE OR REPLACE VIEW daily_collection_queue AS
+CREATE OR REPLACE VIEW daily_collection_queue WITH (security_invoker = true) AS
 SELECT
   l.id AS loan_id,
   l.client_id,
@@ -490,7 +490,7 @@ WHERE a.outstanding > 0
 ORDER BY a.days_overdue DESC NULLS LAST;
 
 -- Resumen global de cartera
-CREATE OR REPLACE VIEW portfolio_summary AS
+CREATE OR REPLACE VIEW portfolio_summary WITH (security_invoker = true) AS
 SELECT
   (SELECT COUNT(*) FROM clients WHERE active) AS total_clients,
   (SELECT COUNT(*) FROM loans WHERE status IN ('active','overdue')) AS active_loans,
@@ -522,7 +522,7 @@ CREATE POLICY "profiles_admin_insert" ON profiles FOR INSERT TO authenticated
 -- Helper: rol del usuario actual (stable, se evalúa una vez por consulta)
 CREATE OR REPLACE FUNCTION fn_my_role() RETURNS user_role AS $$
   SELECT role FROM profiles WHERE id = auth.uid();
-$$ LANGUAGE sql STABLE SECURITY DEFINER;
+$$ LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public;
 
 -- Helper: ¿el préstamo está asignado al usuario actual o es gestión libre?
 CREATE OR REPLACE FUNCTION fn_can_see_loan(p_loan UUID) RETURNS BOOLEAN AS $$
@@ -530,7 +530,7 @@ CREATE OR REPLACE FUNCTION fn_can_see_loan(p_loan UUID) RETURNS BOOLEAN AS $$
     SELECT l.assigned_to = auth.uid() OR l.assigned_to IS NULL
     FROM loans l WHERE l.id = p_loan
   ), TRUE);
-$$ LANGUAGE sql STABLE SECURITY DEFINER;
+$$ LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public;
 
 -- Clientes: todos leen; escritura para todos los roles autenticados (operación diaria).
 CREATE POLICY "clients_read" ON clients FOR SELECT TO authenticated USING (TRUE);
