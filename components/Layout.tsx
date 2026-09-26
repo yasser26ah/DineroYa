@@ -6,6 +6,7 @@ import {
   Activity, Menu, X, PieChart, Users, Wallet, HandCoins, ScrollText, Settings, LogOut, HardDrive, Cloud,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useData } from '../context/DataContext';
 import { UserRole } from '../types';
 import { initials } from '../lib/format';
 
@@ -30,8 +31,17 @@ export const Layout: React.FC<{
   active: string; onNavigate: (id: string) => void; children: React.ReactNode;
 }> = ({ active, onNavigate, children }) => {
   const { user, signOut, mode } = useAuth();
+  const { profiles } = useData();
   const [isOpen, setIsOpen] = useState(false);
-  const items = NAV_ITEMS.filter(i => user && i.roles.includes(user.role));
+
+  // Pantallas permitidas: rol admin ve todo; si hay rol personalizado con
+  // screens definidas, se respeta esa lista.
+  const myProfile = profiles.find(p => p.id === user?.id);
+  const allowedScreens = myProfile?.screens;
+  const items = NAV_ITEMS.filter(i =>
+    user && i.roles.includes(user.role) &&
+    (!allowedScreens || allowedScreens.length === 0 || allowedScreens.includes(i.id))
+  );
 
   return (
     <div className="min-h-screen flex bg-[#F8FAFC]">

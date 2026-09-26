@@ -34,6 +34,15 @@ export const LoansPage: React.FC = () => {
   } = useData();
   const { user } = useAuth();
   const cur = settings.currency;
+  // Permisos del rol personalizado (si existen); admin siempre tiene todo.
+  const myProfile = profiles.find(p => p.id === user?.id);
+  const can = (perm: string): boolean => {
+    if (user?.role === 'admin') return true;
+    if (!myProfile?.perms) return true; // sin rol personalizado → comportamiento clásico
+    return !!myProfile.perms[perm];
+  };
+  const canCancel = (loan: Loan): boolean =>
+    can('cancelLoan') || (loan.assignedTo !== null && loan.assignedTo === user?.id);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [detail, setDetail] = useState<string | null>(null);
@@ -220,14 +229,14 @@ export const LoansPage: React.FC = () => {
                                   </p>
                                   {p.notes?.includes('ANULADO') ? (
                                     <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-slate-200 text-slate-500">Anulado</span>
-                                  ) : (
+                                  ) : can('voidPayment') ? (
                                     <button
                                       onClick={() => setModal({ kind: 'void', payment: p, loan })}
                                       className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-rose-50 text-rose-600 hover:bg-rose-100"
                                     >
                                       Anular
                                     </button>
-                                  )}
+                                  ) : null}
                                 </div>
                               </div>
                             );
@@ -277,13 +286,11 @@ export const LoansPage: React.FC = () => {
                       </Btn>
                     </>
                   )}
-                  {user?.role === 'admin' && (
-                    <>
-                      <Btn variant="secondary" onClick={() => setModal({ kind: 'assign', loan })} className="flex items-center gap-1.5"><UserCog className="w-3.5 h-3.5" /> Asignar</Btn>
-                      {loan.status !== 'cancelled' && loan.status !== 'paid' && (
-                        <Btn variant="danger" onClick={() => setModal({ kind: 'cancel', loan })} className="flex items-center gap-1.5"><XCircle className="w-3.5 h-3.5" /> Cancelar</Btn>
-                      )}
-                    </>
+                  {can('assignLoan') && (
+                    <Btn variant="secondary" onClick={() => setModal({ kind: 'assign', loan })} className="flex items-center gap-1.5"><UserCog className="w-3.5 h-3.5" /> Asignar</Btn>
+                  )}
+                  {loan.status !== 'cancelled' && loan.status !== 'paid' && canCancel(loan) && (
+                    <Btn variant="danger" onClick={() => setModal({ kind: 'cancel', loan })} className="flex items-center gap-1.5"><XCircle className="w-3.5 h-3.5" /> Cancelar</Btn>
                   )}
                 </div>
               </Card>

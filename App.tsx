@@ -121,11 +121,19 @@ const Shell: React.FC = () => {
 };
 
 const AppBody: React.FC<{ activeTab: string; onNavigate: (t: string) => void; isSupabase: boolean }> = ({ activeTab, onNavigate, isSupabase }) => {
-  const { error, refresh, loading, clients } = useData();
+  const { error, refresh, loading, clients, profiles } = useData();
+  const { user } = useAuth();
   const firstLoad = loading && clients.length === 0;
 
+  // Si la pestaña activa no está permitida por el rol, redirige a la primera permitida.
+  const myProfile = profiles.find(p => p.id === user?.id);
+  const allowed = myProfile?.screens;
+  const effectiveTab = (allowed && allowed.length > 0 && !allowed.includes(activeTab))
+    ? allowed[0]
+    : activeTab;
+
   const page = (() => {
-    switch (activeTab) {
+    switch (effectiveTab) {
       case 'collections': return <CollectionsPage />;
       case 'loans': return <LoansPage />;
       case 'clients': return <ClientsPage />;
@@ -137,7 +145,7 @@ const AppBody: React.FC<{ activeTab: string; onNavigate: (t: string) => void; is
   })();
 
   return (
-    <Layout active={activeTab} onNavigate={onNavigate}>
+    <Layout active={effectiveTab} onNavigate={onNavigate}>
       <div className="pt-4 lg:pt-6">
         {error && <ErrorBanner message={error} onRetry={refresh} />}
         {firstLoad ? (

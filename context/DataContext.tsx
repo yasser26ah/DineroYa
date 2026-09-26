@@ -3,7 +3,7 @@
 // ============================================================================
 import React, { createContext, useContext, useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  AppSettings, AuditEvent, Client, CollectionActivity, Installment, Loan, Payment, Profile, UserRole,
+  AppSettings, AuditEvent, Client, CollectionActivity, CustomRole, Installment, Loan, Payment, Profile, UserRole,
 } from '../types';
 import {
   DataAdapter, getAdapter, CreateLoanInput, PayInput, ActivityInput, NewClientInput,
@@ -20,6 +20,9 @@ interface DataState {
   activities: CollectionActivity[];
   auditEvents: AuditEvent[];
   profiles: Profile[];
+  roles: CustomRole[];
+  saveRole: (role: CustomRole) => Promise<void>;
+  deleteRole: (roleId: string) => Promise<void>;
   settings: AppSettings;
   stats: DashboardStatsLike;
   // acciones
@@ -50,6 +53,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [activities, setActivities] = useState<CollectionActivity[]>([]);
   const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [roles, setRoles] = useState<CustomRole[]>([]);
   const [settings, setSettings] = useState<AppSettings>({
     currency: '$', defaultInterestRate: 15, companyName: 'FinanzaPro',
   });
@@ -63,8 +67,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         adapter.listPayments(), adapter.listActivities(), adapter.listAuditEvents(),
         adapter.listProfiles().catch(() => [] as Profile[]), adapter.getSettings(),
       ]);
+      const rs = await adapter.listRoles().catch(() => [] as CustomRole[]);
       setClients(c); setLoans(l); setInstallments(i); setPayments(p);
-      setActivities(a); setAuditEvents(ev); setProfiles(pr); setSettings(s);
+      setActivities(a); setAuditEvents(ev); setProfiles(pr); setSettings(s); setRoles(rs);
     } catch (e: any) {
       setError(e?.message ?? 'Error cargando datos');
     } finally {
@@ -106,6 +111,18 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logActivity = useCallback((input: ActivityInput) => wrap(() => adapter.logActivity(input)), [adapter, wrap]);
   const updateSettings = useCallback((patch: Partial<AppSettings>) => wrap(() => adapter.updateSettings(patch)), [adapter, wrap]);
   const updateProfileRole = useCallback((userId: string, role: UserRole) => wrap(() => adapter.updateProfileRole(userId, role)), [adapter, wrap]);
+
+  const saveRole = useCallback(async (role: CustomRole) => {
+    await wrap(() => adapter.saveRole(role));
+    const rs = await adapter.listRoles().catch(() => [] as CustomRole[]);
+    setRoles(rs);
+  }, [adapter, wrap]);
+
+  const deleteRole = useCallback(async (roleId: string) => {
+    await wrap(() => adapter.deleteRole(roleId));
+    const rs = await adapter.listRoles().catch(() => [] as CustomRole[]);
+    setRoles(rs);
+  }, [adapter, wrap]);
   const toggleProfileActive = useCallback((userId: string, active: boolean) => wrap(() => adapter.toggleProfileActive(userId, active)), [adapter, wrap]);
 
   // --- Estadísticas derivadas ---------------------------------------------------
@@ -118,10 +135,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   return (
     <DataContext.Provider value={{
       loading, error, clients, loans, installments, payments, activities,
-      auditEvents, profiles, settings, stats,
+      auditEvents, profiles, roles, settings, stats,
       createClient, updateClient, createLoan, cancelLoan, assignLoan,
       registerPayment, voidPayment, logActivity, updateSettings,
-      updateProfileRole, toggleProfileActive, refresh: load,
+      updateProfileRole, toggleProfileActive, saveRole, deleteRole, refresh: load,
     }}>
       {children}
     </DataContext.Provider>

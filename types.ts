@@ -20,7 +20,35 @@ export interface Profile {
   role: UserRole;
   active: boolean;
   email?: string;
+  roleId?: string;
+  roleName?: string;
+  screens?: string[];
+  perms?: Record<string, boolean>;
 }
+
+/** Rol personalizable: pantallas visibles + permisos de movimientos. */
+export interface CustomRole {
+  id: string;
+  name: string;
+  screens: string[];
+  perms: Record<string, boolean>;
+  isSystem: boolean;
+}
+
+/** Catálogo de permisos de movimiento (mostrados en Equipo). */
+export const PERM_LABELS: Record<string, string> = {
+  viewAll: 'Ver toda la cartera (no solo lo asignado)',
+  payments: 'Registrar pagos y abonos',
+  activities: 'Registrar gestiones de cobranza',
+  createLoan: 'Crear préstamos',
+  editClient: 'Crear y editar clientes',
+  cancelLoan: 'Cancelar préstamos',
+  assignLoan: 'Asignar préstamos a cobradores',
+  voidPayment: 'Anular pagos',
+  manageRoles: 'Gestionar roles y permisos',
+  editSettings: 'Editar configuración del negocio',
+  exportData: 'Exportar respaldos',
+};
 
 export interface Client {
   id: string;

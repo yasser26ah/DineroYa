@@ -542,6 +542,56 @@ ALTER TABLE collection_activities ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE app_settings ENABLE ROW LEVEL SECURITY;
 
+-- ---------------------------------------------------------------------------
+-- 11b. Roles personalizados: pantallas visibles + permisos de movimientos.
+-- El rol admin del sistema siempre tiene acceso total (fn_has_perm lo garantiza).
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS roles (
+  id TEXT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  screens TEXT[] NOT NULL DEFAULT '{}',
+  perms JSONB NOT NULL DEFAULT '{}'::jsonb,
+  is_system BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE roles ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "roles_read" ON roles FOR SELECT TO authenticated USING (TRUE);
+DROP POLICY IF EXISTS "roles_write" ON roles;
+CREATE POLICY "roles_write" ON roles FOR ALL TO authenticated
+  USING (fn_has_perm('manageRoles'))
+  WITH CHECK (fn_has_perm('manageRoles'));
+
+INSERT INTO roles (id, name, screens, perms, is_system) VALUES
+  ('admin','Administrador',
+   ARRAY['dashboard','collections','loans','clients','audit','team','settings'],
+   '{"viewAll":true,"payments":true,"activities":true,"createLoan":true,"editClient":true,"cancelLoan":true,"assignLoan":true,"voidPayment":true,"manageRoles":true,"editSettings":true,"exportData":true}', TRUE),
+  ('gerente','Gerente',
+   ARRAY['dashboard','collections','loans','clients','audit','settings'],
+   '{"viewAll":true,"payments":true,"activities":true,"createLoan":true,"editClient":true,"assignLoan":true}', TRUE),
+  ('cobrador','Cobrador',
+   ARRAY['dashboard','collections','loans','clients'],
+   '{"viewAll":false,"payments":true,"activities":true}', TRUE)
+ON CONFLICT (id) DO UPDATE SET
+  screens = EXCLUDED.screens, perms = EXCLUDED.perms, is_system = TRUE;
+
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS role_id TEXT REFERENCES roles(id);
+UPDATE profiles SET role_id = role::text WHERE role_id IS NULL;
+
+-- ¿Tiene el usuario actual el permiso dado? El rol 'admin' del sistema manda.
+CREATE OR REPLACE FUNCTION fn_has_perm(p_perm TEXT)
+RETURNS BOOLEAN
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'
+  ) OR COALESCE((
+    SELECT (r.perms ->> p_perm)::boolean
+    FROM profiles pf JOIN roles r ON r.id = pf.role_id
+    WHERE pf.id = auth.uid()
+  ), false);
+$$;
+GRANT SELECT ON roles TO authenticated;
+
 -- Perfiles: todos los autenticados ven el equipo; solo admin modifica.
 CREATE POLICY "profiles_read" ON profiles FOR SELECT TO authenticated USING (TRUE);
 CREATE POLICY "profiles_self_update" ON profiles FOR UPDATE TO authenticated
@@ -600,7 +650,7 @@ CREATE POLICY "audit_read" ON audit_events FOR SELECT TO authenticated
 -- Configuración: todos leen; solo admin escribe.
 CREATE POLICY "settings_read" ON app_settings FOR SELECT TO authenticated USING (TRUE);
 CREATE POLICY "settings_write" ON app_settings FOR UPDATE TO authenticated
-  USING ((SELECT fn_my_role()) = 'admin');
+  USING (fn_has_perm('editSettings'));
 
 -- ---------------------------------------------------------------------------
 -- 12. Permisos de ejecución
@@ -609,4 +659,5 @@ GRANT EXECUTE ON FUNCTION fn_generate_schedule(UUID, DECIMAL, DECIMAL, INTEGER, 
 GRANT EXECUTE ON FUNCTION fn_apply_payment(UUID, DECIMAL, VARCHAR, TEXT, DATE) TO authenticated;
 GRANT EXECUTE ON FUNCTION fn_void_payment(UUID, TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION fn_mark_overdue() TO authenticated;
+GRANT EXECUTE ON FUNCTION fn_has_perm(TEXT) TO authenticated;
 GRANT SELECT ON aging_report, daily_collection_queue, portfolio_summary, loan_balances TO authenticated;

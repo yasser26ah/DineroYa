@@ -9,7 +9,7 @@
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import {
-  AppSettings, AuditEvent, Client, CollectionActivity, Installment, Loan,
+  AppSettings, AuditEvent, Client, CollectionActivity, CustomRole, Installment, Loan,
   Payment, Profile, UserRole,
 } from '../types';
 import { DEFAULT_SETTINGS, todayISO } from '../lib/format';
@@ -73,6 +73,9 @@ export interface DataAdapter {
 
   // Lectura
   listProfiles(): Promise<Profile[]>;
+  listRoles(): Promise<CustomRole[]>;
+  saveRole(role: CustomRole): Promise<void>;
+  deleteRole(roleId: string): Promise<void>;
   listClients(): Promise<Client[]>;
   listLoans(): Promise<Loan[]>;
   listInstallments(): Promise<Installment[]>;
@@ -555,6 +558,18 @@ export class LocalDataAdapter implements DataAdapter {
     // Sin usuarios reales en modo local
   }
 
+  async listRoles(): Promise<CustomRole[]> {
+    return [];
+  }
+
+  async saveRole(): Promise<void> {
+    throw new Error('Los roles personalizados requieren el modo multiusuario (Supabase).');
+  }
+
+  async deleteRole(): Promise<void> {
+    throw new Error('Los roles personalizados requieren el modo multiusuario (Supabase).');
+  }
+
   async toggleProfileActive(): Promise<void> {
     // Sin usuarios reales en modo local
   }
@@ -585,6 +600,10 @@ const sbClient = (): SupabaseClient => {
 const mapProfile = (r: any): Profile => ({
   id: r.id, fullName: r.full_name, role: r.role, active: r.active,
   email: r.email ?? undefined,
+  roleId: r.role_id ?? undefined,
+  roleName: r.role_name ?? (r.role_id ? undefined : r.role),
+  screens: r.screens ?? undefined,
+  perms: r.perms ?? undefined,
 });
 
 const mapClient = (r: any): Client => ({
@@ -638,7 +657,11 @@ export class SupabaseAdapter implements DataAdapter {
     const { data: auth } = await this.db.auth.getUser();
     if (!auth.user) return null;
     const { data } = await this.db.from('profiles').select('*').eq('id', auth.user.id).maybeSingle();
-    return data ? mapProfile({ ...data, email: auth.user.email }) : null;
+    const { data: roleData } = await this.db.from('roles').select('*').eq('id', data?.role_id ?? '').maybeSingle();
+    return data ? mapProfile({
+      ...data, email: auth.user.email,
+      screens: roleData?.screens, perms: roleData?.perms, role_name: roleData?.name,
+    }) : null;
   };
 
   // --- Auth ------------------------------------------------------------------
@@ -693,7 +716,17 @@ export class SupabaseAdapter implements DataAdapter {
   async listProfiles(): Promise<Profile[]> {
     const auth = await this.db.auth.getUser();
     const profiles = await this.rows('profiles');
-    return profiles.map((r: any) => mapProfile({ ...r, email: r.id === auth.data.user?.id ? auth.data.user?.email : undefined }));
+    const roles = await this.listRoles().catch(() => [] as CustomRole[]);
+    return profiles.map((r: any) => {
+      const roleData = roles.find(x => x.id === r.role_id);
+      return mapProfile({
+        ...r,
+        email: r.id === auth.data.user?.id ? auth.data.user?.email : undefined,
+        screens: roleData?.screens,
+        perms: roleData?.perms,
+        role_name: roleData?.name,
+      });
+    });
   }
 
   async listClients(): Promise<Client[]> {
@@ -845,8 +878,32 @@ export class SupabaseAdapter implements DataAdapter {
     return this.getSettings();
   }
 
+  async listRoles(): Promise<CustomRole[]> {
+    const { data, error } = await this.db.from('roles').select('*').order('created_at');
+    if (error) throw new Error(error.message);
+    return (data ?? []).map((r: any) => ({
+      id: r.id, name: r.name, screens: r.screens ?? [], perms: r.perms ?? {}, isSystem: r.is_system,
+    }));
+  }
+
+  async saveRole(role: CustomRole): Promise<void> {
+    const { error } = await this.db.from('roles').upsert({
+      id: role.id, name: role.name, screens: role.screens, perms: role.perms, is_system: role.isSystem ?? false,
+    });
+    if (error) throw new Error(error.message);
+  }
+
+  async deleteRole(roleId: string): Promise<void> {
+    const { error } = await this.db.from('roles').delete().eq('id', roleId);
+    if (error) throw new Error(error.message);
+  }
+
   async updateProfileRole(userId: string, role: UserRole): Promise<void> {
-    const { error } = await this.db.from('profiles').update({ role }).eq('id', userId);
+    // `role` puede ser un rol del sistema (admin/gerente/cobrador) o el id de un rol personalizado.
+    const isSystemRole = ['admin', 'gerente', 'cobrador'].includes(role);
+    const patch: any = { role_id: role };
+    if (isSystemRole) patch.role = role;
+    const { error } = await this.db.from('profiles').update(patch).eq('id', userId);
     if (error) throw new Error(error.message);
   }
 
