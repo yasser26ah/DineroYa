@@ -10,7 +10,7 @@ import {
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import { fmtDate, fmtMoney, todayISO, waLink } from '../lib/format';
-import { generateSchedule, riskSuggestedRate } from '../lib/engine';
+import { generateSchedule, restructureSchedule, riskSuggestedRate, splitInstallmentsForRestructure, ScheduleRow } from '../lib/engine';
 import { generatePaymentMessage } from '../services/gemini';
 import { Btn, Field, inputCls, Modal } from './ui';
 
@@ -520,6 +520,118 @@ export const VoidPaymentModal: React.FC<{
         <div className="flex gap-3 mt-2">
           <Btn variant="secondary" onClick={onClose} className="flex-1">Cancelar</Btn>
           <Btn type="submit" variant="danger" disabled={busy} className="flex-1">Anular pago</Btn>
+        </div>
+      </form>
+    </Modal>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// Reestructuración de préstamo (cambiar número de cuotas / frecuencia)
+// ---------------------------------------------------------------------------
+export const LoanRestructureModal: React.FC<{
+  loan: Loan;
+  installments: Installment[];
+  payments: Payment[];
+  onClose: () => void;
+}> = ({ loan, installments, payments, onClose }) => {
+  const { restructureLoan, settings } = useData();
+  const [newCount, setNewCount] = useState(String(loan.installmentsCount));
+  const [frequency, setFrequency] = useState<LoanFrequency>(loan.frequency);
+  const [firstDue, setFirstDue] = useState(() => {
+    const last = [...installments].sort((a, b) => a.installmentNumber - b.installmentNumber).at(-1);
+    const base = last?.dueDate ?? loan.firstDueDate;
+    return base
+      ? new Date(new Date(base).getTime() + 86400000).toISOString().slice(0, 10)
+      : loan.firstDueDate;
+  });
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [preview, setPreview] = useState<ScheduleRow[] | null>(null);
+
+  const pending = installments.filter(i => i.status !== 'paid' && i.status !== 'waived');
+  const outstanding = pending.reduce((a, i) => a + (i.amountDue - i.amountPaid), 0);
+  const { keep, pendingRemaining } = splitInstallmentsForRestructure(installments);
+  const keepCount = keep.length;
+  const remainingDue = pendingRemaining;
+
+  const recomputePreview = () => {
+    const n = Number(newCount);
+    if (!n || n < 1) { setPreview(null); setError('Ingresa un número de cuotas válido.'); return; }
+    if (n <= keepCount) { setPreview(null); setError(`El total de cuotas debe ser mayor al de cuotas ya pagadas (${keepCount}).`); return; }
+    setError(null);
+    try {
+      setPreview(restructureSchedule(remainingDue, n - keepCount, frequency, firstDue));
+    } catch (e: any) {
+      setPreview(null);
+      setError(e.message ?? 'No se pudo calcular la vista previa.');
+    }
+  };
+
+  React.useEffect(() => { recomputePreview(); }, [newCount, frequency, firstDue]);
+
+  const submit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setError(null);
+    const n = Number(newCount);
+    if (!n || n < 1) { setError('Ingresa un número de cuotas válido.'); return; }
+    if (n <= keepCount) { setError(`El total de cuotas debe ser mayor al de cuotas ya pagadas (${keepCount}).`); return; }
+    setBusy(true);
+    try {
+      await restructureLoan({
+        loanId: loan.id,
+        newInstallmentsCount: n,
+        frequency,
+        firstDueDate: firstDue,
+      });
+      onClose();
+    } catch (err: any) {
+      setError(err.message ?? 'No se pudo reestructurar el préstamo.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Modal title="Reestructurar préstamo" subtitle="Cambia la cantidad de cuotas o la frecuencia; el total del préstamo no cambia" onClose={onClose} wide>
+      <form onSubmit={submit} className="flex flex-col gap-5">
+        <div className="bg-slate-50 rounded-3xl p-5 border border-slate-100">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Préstamo actual</p>
+          <p className="font-black text-slate-900">{loan.installmentsCount} cuotas {FREQUENCY_LABELS[loan.frequency].toLowerCase()} · {fmtMoney(loan.totalDue, settings.currency)} total</p>
+          <p className="text-[11px] text-slate-500 font-bold mt-1">Saldo pendiente: {fmtMoney(outstanding, settings.currency)}</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <Field label="Total de cuotas">
+            <input type="number" min="1" max="120" required value={newCount} onChange={e => setNewCount(e.target.value)} className={inputCls} />
+          </Field>
+          <Field label="Frecuencia">
+            <select value={frequency} onChange={e => setFrequency(e.target.value as LoanFrequency)} className={inputCls}>
+              {Object.entries(FREQUENCY_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            </select>
+          </Field>
+          <Field label="Primera cuota del nuevo calendario">
+            <input type="date" required value={firstDue} onChange={e => setFirstDue(e.target.value)} className={inputCls} />
+          </Field>
+        </div>
+        {error && <p className="text-rose-600 text-sm font-bold">{error}</p>}
+        {preview && (
+          <div className="bg-slate-50 rounded-3xl p-5 border border-slate-100">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Vista previa de las nuevas cuotas pendientes ({preview.length})</p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 max-h-44 overflow-y-auto">
+              {preview.map(s => (
+                <div key={s.installmentNumber} className="bg-white rounded-xl p-3 border border-slate-100">
+                  <p className="text-[10px] font-black text-slate-400">CUOTA {s.installmentNumber}</p>
+                  <p className="text-sm font-black text-slate-800">{fmtMoney(s.amountDue, settings.currency)}</p>
+                  <p className="text-[10px] text-slate-400 font-bold">{fmtDate(s.dueDate)}</p>
+                </div>
+              ))}
+            </div>
+            <p className="text-[10px] text-slate-400 font-bold mt-3">Las cuotas ya pagadas se conservan con sus montos y fechas originales.</p>
+          </div>
+        )}
+        <div className="flex gap-3 mt-2">
+          <Btn variant="secondary" onClick={onClose} className="flex-1">Cancelar</Btn>
+          <Btn type="submit" disabled={busy} className="flex-1">Reestructurar</Btn>
         </div>
       </form>
     </Modal>

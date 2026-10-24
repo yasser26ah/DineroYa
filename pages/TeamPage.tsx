@@ -12,25 +12,30 @@ const ROLE_LABELS: Record<UserRole, string> = {
   admin: 'Administrador',
   gerente: 'Gerente',
   cobrador: 'Cobrador',
+  cliente: 'Cliente',
 };
 
 const ROLE_STYLE: Record<UserRole, string> = {
   admin: 'bg-indigo-100 text-indigo-700',
   gerente: 'bg-sky-100 text-sky-700',
   cobrador: 'bg-slate-100 text-slate-600',
+  cliente: 'bg-emerald-100 text-emerald-700',
 };
 
 const ROLE_HELP: Record<UserRole, string> = {
   admin: 'Acceso total: configuración, equipo, cancelaciones y auditoría.',
   gerente: 'Ve toda la cartera y la auditoría; no gestiona usuarios.',
   cobrador: 'Ve y gestiona solo los préstamos asignados a él.',
+  cliente: 'Portal de autoservicio: sus préstamos, cuotas y solicitudes de crédito.',
 };
 
 const SCREEN_OPTIONS: { id: string; label: string }[] = [
+  { id: 'portal', label: 'Portal del cliente' },
   { id: 'dashboard', label: 'Resumen Global' },
   { id: 'collections', label: 'Cobranza del Día' },
   { id: 'loans', label: 'Préstamos' },
   { id: 'clients', label: 'Clientes' },
+  { id: 'applications', label: 'Solicitudes de crédito' },
   { id: 'audit', label: 'Auditoría' },
   { id: 'team', label: 'Equipo' },
   { id: 'settings', label: 'Configuración' },

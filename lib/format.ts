@@ -5,11 +5,9 @@ import { AppSettings } from '../types';
 
 export const DEFAULT_SETTINGS: AppSettings = {
   currency: '$',
-  defaultInterestRate: 15,
-  companyName: 'FinanzaPro',
+  defaultInterestRate: 15,  companyName: 'DineroYa',
   moraRate: 5,
 };
-
 export const fmtMoney = (v: number, currency = '$') =>
   `${currency}${(v ?? 0).toLocaleString('es', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 

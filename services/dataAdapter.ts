@@ -9,12 +9,13 @@
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import {
-  AppSettings, AuditEvent, Client, CollectionActivity, CustomRole, Installment, Loan,
-  Payment, Profile, UserRole,
+  AppSettings, AuditEvent, Client, CollectionActivity, CreditApplication, CreditApplicationStatus,
+  CustomRole, Installment, Loan, Payment, Profile, RestructureLoanInput, UserRole,
 } from '../types';
 import { DEFAULT_SETTINGS, todayISO } from '../lib/format';
 import {
   EMPTY_SETTINGS, generateSchedule, computeRiskScore, loanOutstanding, clientMoraAmount,
+  restructureSchedule, splitInstallmentsForRestructure,
 } from '../lib/engine';
 
 export interface AuthUser {
@@ -22,6 +23,8 @@ export interface AuthUser {
   email: string;
   fullName: string;
   role: UserRole;
+  /** Cliente vinculado cuando el usuario tiene rol 'cliente'. */
+  clientId?: string | null;
 }
 
 export interface CreateLoanInput {
@@ -60,13 +63,33 @@ export interface NewClientInput {
   notes?: string;
 }
 
+export interface NewCreditApplicationInput {
+  requestedAmount: number;
+  purpose?: string;
+  notes?: string;
+  /** Solo se usa en modo local o cuando el staff registra la solicitud a nombre de un cliente. */
+  clientId?: string | null;
+  applicantName?: string;
+  document?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+}
+
+export interface SignUpOptions {
+  /** 'cliente' crea automáticamente la ficha de cliente vinculada al usuario. */
+  role?: 'cliente' | 'cobrador' | 'gerente';
+  phone?: string;
+  document?: string;
+}
+
 export interface DataAdapter {
   readonly mode: 'local' | 'supabase';
 
   // Auth
   getSession(): Promise<AuthUser | null>;
   signIn(email: string, password: string): Promise<AuthUser>;
-  signUp(email: string, password: string, fullName: string): Promise<void>;
+  signUp(email: string, password: string, fullName: string, options?: SignUpOptions): Promise<void>;
   resetPassword(email: string): Promise<void>;
   updatePassword(newPassword: string): Promise<void>;
   signOut(): Promise<void>;
@@ -89,6 +112,7 @@ export interface DataAdapter {
   createClient(input: NewClientInput): Promise<Client>;
   updateClient(id: string, patch: Partial<NewClientInput> & { active?: boolean }): Promise<void>;
   createLoan(input: CreateLoanInput): Promise<Loan>;
+  restructureLoan(input: RestructureLoanInput): Promise<Loan>;
   cancelLoan(id: string, reason: string): Promise<void>;
   assignLoan(id: string, userId: string | null): Promise<void>;
   registerPayment(input: PayInput): Promise<Payment>;
@@ -97,6 +121,12 @@ export interface DataAdapter {
   updateSettings(patch: Partial<AppSettings>): Promise<AppSettings>;
   updateProfileRole(userId: string, role: UserRole): Promise<void>;
   toggleProfileActive(userId: string, active: boolean): Promise<void>;
+
+  // Portal del cliente / solicitudes de crédito
+  listApplications(): Promise<CreditApplication[]>;
+  createApplication(input: NewCreditApplicationInput): Promise<CreditApplication>;
+  updateApplicationStatus(id: string, status: CreditApplicationStatus, reviewNotes?: string): Promise<void>;
+  linkClientToProfile(userId: string, clientId: string | null): Promise<void>;
 }
 
 // ============================================================================
@@ -112,6 +142,7 @@ const LS = {
   audit: 'db_audit',
   settings: 'db_settings',
   session: 'db_session',
+  applications: 'db_applications',
   seeded: 'db_seeded_v3',
 };
 
@@ -133,9 +164,10 @@ const uid = () =>
 
 const DEMO_USER: AuthUser = {
   id: 'demo-user',
-  email: 'demo@finanzapro.local',
+  email: 'demo@dineroya.local',
   fullName: 'Operador Demo',
   role: 'admin',
+  clientId: null,
 };
 
 export class LocalDataAdapter implements DataAdapter {
@@ -147,6 +179,7 @@ export class LocalDataAdapter implements DataAdapter {
   private payments: Payment[] = [];
   private activities: CollectionActivity[] = [];
   private audit: AuditEvent[] = [];
+  private applications: CreditApplication[] = [];
   private settings: AppSettings = { ...DEFAULT_SETTINGS };
 
   constructor(seedDemo = true) {
@@ -156,6 +189,7 @@ export class LocalDataAdapter implements DataAdapter {
     this.payments = read<Payment[]>(LS.payments, []);
     this.activities = read<CollectionActivity[]>(LS.activities, []);
     this.audit = read<AuditEvent[]>(LS.audit, []);
+    this.applications = read<CreditApplication[]>(LS.applications, []);
     this.settings = { ...EMPTY_SETTINGS, ...read<Partial<AppSettings>>(LS.settings, {}) };
 
     if (seedDemo && !read<boolean>(LS.seeded, false) && this.clients.length === 0) {
@@ -306,13 +340,34 @@ export class LocalDataAdapter implements DataAdapter {
   }
 
   async signIn(email: string): Promise<AuthUser> {
-    const user = { ...DEMO_USER, email };
+    const existing = read<AuthUser | null>(LS.session, null);
+    if (existing && existing.email.toLowerCase() === email.toLowerCase()) return existing;
+
+    const client = this.clients.find(c => c.email && c.email.toLowerCase() === email.toLowerCase());
+    const user: AuthUser = client
+      ? { id: `local-client-${client.id}`, email, fullName: client.name, role: 'cliente', clientId: client.id }
+      : { ...DEMO_USER, email };
     write(LS.session, user);
     return user;
   }
 
-  async signUp(email: string, _password: string, fullName: string): Promise<void> {
-    write(LS.session, { ...DEMO_USER, email, fullName });
+  async signUp(email: string, _password: string, fullName: string, options?: SignUpOptions): Promise<void> {
+    const role = options?.role ?? 'cobrador';
+    let clientId: string | null = null;
+    if (role === 'cliente') {
+      let client = this.clients.find(c => c.email && c.email.toLowerCase() === email.toLowerCase());
+      if (!client) {
+        client = {
+          id: uid(), name: fullName, document: options?.document, phone: options?.phone ?? '',
+          email, address: undefined, notes: undefined, registrationDate: todayISO(),
+          riskScore: 50, active: true, createdAt: new Date().toISOString(),
+        };
+        this.clients.push(client);
+        this.persistAll();
+      }
+      clientId = client.id;
+    }
+    write(LS.session, { id: uid(), email, fullName, role, clientId });
   }
 
   async resetPassword(_email: string): Promise<void> {
@@ -434,6 +489,92 @@ export class LocalDataAdapter implements DataAdapter {
     });
     this.persistAll();
     return loan;
+  }
+
+  async restructureLoan(input: RestructureLoanInput): Promise<Loan> {
+    const loan = this.loans.find(l => l.id === input.loanId);
+    if (!loan) throw new Error('Préstamo no encontrado');
+
+    const current = this.installments
+      .filter(i => i.loanId === loan.id)
+      .sort((a, b) => a.installmentNumber - b.installmentNumber);
+
+    const { keep, pendingRemaining } = splitInstallmentsForRestructure(current);
+    if (pendingRemaining <= 0) throw new Error('El préstamo no tiene saldo pendiente por reestructurar');
+
+    const newPendingCount = input.newInstallmentsCount - keep.length;
+    if (newPendingCount < 1) {
+      throw new Error(`El total de cuotas debe ser mayor a las ${keep.length} cuotas ya pagadas o abonadas.`);
+    }
+
+    const startNumber = keep.reduce((max, i) => Math.max(max, i.installmentNumber), 0) + 1;
+    const rows = restructureSchedule(pendingRemaining, newPendingCount, input.frequency, input.firstDueDate, startNumber);
+    const keepIds = new Set(keep.map(i => i.id));
+    this.installments = this.installments.filter(i => i.loanId !== loan.id || keepIds.has(i.id));
+    rows.forEach(r => this.installments.push({
+      id: uid(), loanId: loan.id, installmentNumber: r.installmentNumber,
+      dueDate: r.dueDate, amountDue: r.amountDue, amountPaid: 0, status: 'pending', paidAt: null,
+    }));
+
+    loan.installmentsCount = input.newInstallmentsCount;
+    loan.frequency = input.frequency;
+    loan.firstDueDate = input.firstDueDate;
+    this.recomputeStatus(loan, this.installments.filter(i => i.loanId === loan.id));
+    this.auditEvent('loans', loan.id, 'RESTRUCTURE', {
+      previousCount: current.length,
+      newCount: input.newInstallmentsCount,
+      frequency: input.frequency,
+      firstDueDate: input.firstDueDate,
+      pendingRemaining,
+    });
+    this.persistAll();
+    return loan;
+  }
+
+  async listApplications(): Promise<CreditApplication[]> {
+    return [...this.applications].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
+  async createApplication(input: NewCreditApplicationInput): Promise<CreditApplication> {
+    const client = input.clientId
+      ? this.clients.find(c => c.id === input.clientId)
+      : emailMatch(this.clients, input.email);
+    const now = new Date().toISOString();
+    const application: CreditApplication = {
+      id: uid(),
+      clientId: client?.id ?? input.clientId ?? null,
+      applicantName: input.applicantName ?? client?.name ?? 'Cliente',
+      document: input.document ?? client?.document,
+      phone: input.phone ?? client?.phone ?? '',
+      email: input.email ?? client?.email,
+      address: input.address ?? client?.address,
+      requestedAmount: input.requestedAmount,
+      purpose: input.purpose,
+      notes: input.notes,
+      status: 'pending',
+      reviewNotes: null,
+      reviewedBy: null,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.applications.unshift(application);
+    write(LS.applications, this.applications);
+    this.auditEvent('credit_applications', application.id, 'INSERT', { amount: application.requestedAmount });
+    return application;
+  }
+
+  async updateApplicationStatus(id: string, status: CreditApplicationStatus, reviewNotes?: string): Promise<void> {
+    const app = this.applications.find(a => a.id === id);
+    if (!app) throw new Error('Solicitud no encontrada');
+    app.status = status;
+    app.reviewNotes = reviewNotes ?? app.reviewNotes;
+    app.updatedAt = new Date().toISOString();
+    write(LS.applications, this.applications);
+    this.auditEvent('credit_applications', id, status.toUpperCase(), { reviewNotes });
+  }
+
+  async linkClientToProfile(): Promise<void> {
+    // En modo local el vínculo se resuelve por email al iniciar sesión.
   }
 
   async cancelLoan(id: string, reason: string): Promise<void> {
@@ -581,6 +722,9 @@ const addDaysISO = (iso: string, days: number): string => {
   return d.toISOString().split('T')[0];
 };
 
+const emailMatch = (clients: Client[], email?: string): Client | undefined =>
+  email ? clients.find(c => c.email && c.email.toLowerCase() === email.toLowerCase()) : undefined;
+
 // ============================================================================
 // Adaptador SUPABASE
 // ============================================================================
@@ -604,6 +748,25 @@ const mapProfile = (r: any): Profile => ({
   roleName: r.role_name ?? (r.role_id ? undefined : r.role),
   screens: r.screens ?? undefined,
   perms: r.perms ?? undefined,
+  clientId: r.client_id ?? null,
+});
+
+const mapApplication = (r: any): CreditApplication => ({
+  id: r.id,
+  clientId: r.client_id ?? null,
+  applicantName: r.applicant_name,
+  document: r.document ?? undefined,
+  phone: r.phone ?? '',
+  email: r.email ?? undefined,
+  address: r.address ?? undefined,
+  requestedAmount: Number(r.requested_amount),
+  purpose: r.purpose ?? undefined,
+  notes: r.notes ?? undefined,
+  status: r.status,
+  reviewNotes: r.review_notes ?? undefined,
+  reviewedBy: r.reviewed_by ?? null,
+  createdAt: r.created_at,
+  updatedAt: r.updated_at,
 });
 
 const mapClient = (r: any): Client => ({
@@ -650,6 +813,7 @@ export class SupabaseAdapter implements DataAdapter {
       email: u.email ?? '',
       fullName: profile?.fullName ?? u.email ?? 'Usuario',
       role: profile?.role ?? 'cobrador',
+      clientId: profile?.clientId ?? null,
     };
   }
 
@@ -681,10 +845,18 @@ export class SupabaseAdapter implements DataAdapter {
     return this.toAuthUser(data.user!, profile);
   }
 
-  async signUp(email: string, password: string, fullName: string): Promise<void> {
+  async signUp(email: string, password: string, fullName: string, options?: SignUpOptions): Promise<void> {
+    const role = options?.role === 'cliente' ? 'cliente' : options?.role ?? 'cobrador';
     const { error } = await this.db.auth.signUp({
       email, password,
-      options: { data: { full_name: fullName } },
+      options: {
+        data: {
+          full_name: fullName,
+          role,
+          phone: options?.phone ?? null,
+          document: options?.document ?? null,
+        },
+      },
     });
     if (error) throw new Error(error.message);
   }
@@ -827,6 +999,19 @@ export class SupabaseAdapter implements DataAdapter {
     return loan;
   }
 
+  async restructureLoan(input: RestructureLoanInput): Promise<Loan> {
+    const { error } = await this.db.rpc('fn_restructure_loan', {
+      p_loan_id: input.loanId,
+      p_count: input.newInstallmentsCount,
+      p_frequency: input.frequency,
+      p_first_due: input.firstDueDate,
+    });
+    if (error) throw new Error(error.message);
+    const { data, error: e2 } = await this.db.from('loans').select('*').eq('id', input.loanId).single();
+    if (e2) throw new Error(e2.message);
+    return mapLoan(data);
+  }
+
   async cancelLoan(id: string, reason: string): Promise<void> {
     const { error } = await this.db.from('loans').update({ status: 'cancelled', notes: reason }).eq('id', id);
     if (error) throw new Error(error.message);
@@ -909,6 +1094,56 @@ export class SupabaseAdapter implements DataAdapter {
 
   async toggleProfileActive(userId: string, active: boolean): Promise<void> {
     const { error } = await this.db.from('profiles').update({ active }).eq('id', userId);
+    if (error) throw new Error(error.message);
+  }
+
+  // --- Portal del cliente / solicitudes ---------------------------------------
+
+  private async myProfileRow(): Promise<{ id: string; client_id?: string | null } | null> {
+    const { data: auth } = await this.db.auth.getUser();
+    if (!auth.user) return null;
+    const { data } = await this.db.from('profiles').select('id, client_id').eq('id', auth.user.id).maybeSingle();
+    return data ?? null;
+  }
+
+  async listApplications(): Promise<CreditApplication[]> {
+    const { data, error } = await this.db
+      .from('credit_applications').select('*').order('created_at', { ascending: false });
+    if (error) throw new Error(error.message);
+    return (data ?? []).map(mapApplication);
+  }
+
+  async createApplication(input: NewCreditApplicationInput): Promise<CreditApplication> {
+    const me = await this.myProfileRow();
+    const clientId = input.clientId ?? me?.client_id ?? null;
+    const { data, error } = await this.db.from('credit_applications').insert({
+      client_id: clientId,
+      applicant_name: input.applicantName ?? 'Cliente',
+      document: input.document ?? null,
+      phone: input.phone ?? null,
+      email: input.email ?? null,
+      address: input.address ?? null,
+      requested_amount: input.requestedAmount,
+      purpose: input.purpose ?? null,
+      notes: input.notes ?? null,
+    }).select().single();
+    if (error) throw new Error(error.message);
+    return mapApplication(data);
+  }
+
+  async updateApplicationStatus(id: string, status: CreditApplicationStatus, reviewNotes?: string): Promise<void> {
+    const { data: auth } = await this.db.auth.getUser();
+    const { error } = await this.db.from('credit_applications').update({
+      status,
+      review_notes: reviewNotes ?? null,
+      reviewed_by: auth.user?.id ?? null,
+      updated_at: new Date().toISOString(),
+    }).eq('id', id);
+    if (error) throw new Error(error.message);
+  }
+
+  async linkClientToProfile(userId: string, clientId: string | null): Promise<void> {
+    const { error } = await this.db.from('profiles').update({ client_id: clientId }).eq('id', userId);
     if (error) throw new Error(error.message);
   }
 }

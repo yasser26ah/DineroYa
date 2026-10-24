@@ -2,7 +2,7 @@
 // DineroYa — Modelo de dominio
 // ============================================================================
 
-export type UserRole = 'admin' | 'gerente' | 'cobrador';
+export type UserRole = 'admin' | 'gerente' | 'cobrador' | 'cliente';
 
 export type LoanStatus = 'active' | 'overdue' | 'paid' | 'cancelled';
 export type InstallmentStatus = 'pending' | 'partial' | 'paid' | 'overdue' | 'waived';
@@ -24,6 +24,8 @@ export interface Profile {
   roleName?: string;
   screens?: string[];
   perms?: Record<string, boolean>;
+  /** Ficha de cliente vinculada (rol 'cliente'). */
+  clientId?: string | null;
 }
 
 /** Rol personalizable: pantallas visibles + permisos de movimientos. */
@@ -128,6 +130,43 @@ export interface AuditEvent {
   details?: any;
   createdAt: string;
 }
+
+/** Datos para reestructurar un préstamo (cambiar cuotas/frecuencia sin alterar el total). */
+export interface RestructureLoanInput {
+  loanId: string;
+  newInstallmentsCount: number;
+  frequency: LoanFrequency;
+  firstDueDate: string;
+}
+
+// --- Solicitudes de crédito (portal del cliente) ---
+
+export type CreditApplicationStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
+
+export interface CreditApplication {
+  id: string;
+  clientId?: string | null;
+  applicantName: string;
+  document?: string;
+  phone: string;
+  email?: string;
+  address?: string;
+  requestedAmount: number;
+  purpose?: string;
+  notes?: string;
+  status: CreditApplicationStatus;
+  reviewNotes?: string;
+  reviewedBy?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const CREDIT_APPLICATION_STATUS_LABELS: Record<CreditApplicationStatus, string> = {
+  pending: 'Pendiente',
+  approved: 'Aprobada',
+  rejected: 'Rechazada',
+  cancelled: 'Cancelada',
+};
 
 export interface AppSettings {
   currency: string;

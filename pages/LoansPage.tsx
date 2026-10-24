@@ -10,7 +10,7 @@ import { useAuth } from '../context/AuthContext';
 import {
   Card, PageHeader, EmptyState, Btn, StatusBadge, RiskBadge, SearchBar, loanStatusStyle, installmentStatusStyle, Field, inputCls, Modal,
 } from '../components/ui';
-import { PaymentModal, ActivityModal, VoidPaymentModal, CreateLoanModal, WhatsAppDraftModal } from '../components/modals';
+import { PaymentModal, ActivityModal, VoidPaymentModal, CreateLoanModal, WhatsAppDraftModal, LoanRestructureModal } from '../components/modals';
 import { loanOutstanding, nextInstallmentNumber } from '../lib/engine';
 import { fmtDate, fmtDateTime, fmtMoney } from '../lib/format';
 import {
@@ -25,6 +25,7 @@ type ModalState =
   | { kind: 'void'; payment: Payment; loan: Loan }
   | { kind: 'assign'; loan: Loan }
   | { kind: 'cancel'; loan: Loan }
+  | { kind: 'restructure'; loan: Loan }
   | { kind: 'wa'; loan: Loan }
   | null;
 
@@ -137,22 +138,22 @@ export const LoansPage: React.FC = () => {
                         {loan.installmentsCount} cuotas {FREQUENCY_LABELS[loan.frequency].toLowerCase()} · desde {fmtDate(loan.createdAt)}
                       </p>
                     </div>
-                    <div className="flex lg:items-center gap-6 lg:gap-6 overflow-x-auto -mx-1 px-1 lg:overflow-visible lg:mx-0 lg:px-0 pb-1 lg:pb-0">
-                      <div className="text-right shrink-0">
+                    <div className="flex flex-wrap gap-4 lg:gap-6 mt-5">
+                      <div className="text-center w-28">
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Capital</p>
                         <p className="font-black text-slate-900">{fmtMoney(loan.principal, cur)}</p>
                       </div>
-                      <div className="text-right shrink-0">
+                      <div className="text-center w-24">
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Interés</p>
                         <p className="font-black text-slate-900">{loan.interestRate}%</p>
                       </div>
-                      <div className="text-right shrink-0">
+                      <div className="text-center w-24">
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Cuotas</p>
                         <p className="font-black text-slate-900">{paidCount}/{loan.installmentsCount}</p>
                       </div>
-                      <div className="text-right shrink-0">
+                      <div className="text-right w-40">
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pendiente</p>
-                        <p className={`text-2xl font-black ${outstanding > 0 ? 'text-indigo-600' : 'text-emerald-600'}`}>{fmtMoney(outstanding, cur)}</p>
+                        <p className={`text-xl font-black ${outstanding > 0 ? 'text-indigo-600' : 'text-emerald-600'}`}>{fmtMoney(outstanding, cur)}</p>
                       </div>
                     </div>
                   </div>
@@ -288,9 +289,11 @@ export const LoansPage: React.FC = () => {
                   )}
                   {can('assignLoan') && (
                     <Btn variant="secondary" onClick={() => setModal({ kind: 'assign', loan })} className="flex items-center gap-1.5"><UserCog className="w-3.5 h-3.5" /> Asignar</Btn>
-                  )}
-                  {loan.status !== 'cancelled' && loan.status !== 'paid' && canCancel(loan) && (
+                  )}                  {loan.status !== 'cancelled' && loan.status !== 'paid' && canCancel(loan) && (
                     <Btn variant="danger" onClick={() => setModal({ kind: 'cancel', loan })} className="flex items-center gap-1.5"><XCircle className="w-3.5 h-3.5" /> Cancelar</Btn>
+                  )}
+                  {user?.role === 'admin' && loan.status !== 'cancelled' && loan.status !== 'paid' && (
+                    <Btn variant="secondary" onClick={() => setModal({ kind: 'restructure', loan })} className="flex items-center gap-1.5"><CalendarDays className="w-3.5 h-3.5" /> Reestructurar</Btn>
                   )}
                 </div>
               </Card>
@@ -322,6 +325,14 @@ export const LoansPage: React.FC = () => {
       )}
       {modal?.kind === 'cancel' && (
         <CancelLoanModal loan={modal.loan} onCancel={(reason) => { cancelLoan(modal.loan.id, reason); setModal(null); }} onClose={() => setModal(null)} />
+      )}
+      {modal?.kind === 'restructure' && (
+        <LoanRestructureModal
+          loan={modal.loan}
+          installments={installments.filter(i => i.loanId === modal.loan.id)}
+          payments={payments.filter(p => p.loanId === modal.loan.id)}
+          onClose={() => setModal(null)}
+        />
       )}
       {waMessage !== null && waLoan && (
         <WhatsAppDraftModal

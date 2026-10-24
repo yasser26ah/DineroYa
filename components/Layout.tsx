@@ -4,6 +4,7 @@
 import React, { useState } from 'react';
 import {
   Activity, Menu, X, PieChart, Users, Wallet, HandCoins, ScrollText, Settings, LogOut, HardDrive, Cloud,
+  ClipboardList, Home,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
@@ -18,10 +19,12 @@ export interface NavItem {
 }
 
 export const NAV_ITEMS: NavItem[] = [
+  { id: 'portal', label: 'Mi portal', icon: Home, roles: ['cliente'] },
   { id: 'dashboard', label: 'Resumen Global', icon: PieChart, roles: ['admin', 'gerente', 'cobrador'] },
   { id: 'collections', label: 'Cobranza del Día', icon: HandCoins, roles: ['admin', 'gerente', 'cobrador'] },
   { id: 'loans', label: 'Préstamos', icon: Wallet, roles: ['admin', 'gerente', 'cobrador'] },
   { id: 'clients', label: 'Clientes', icon: Users, roles: ['admin', 'gerente', 'cobrador'] },
+  { id: 'applications', label: 'Solicitudes', icon: ClipboardList, roles: ['admin', 'gerente'] },
   { id: 'audit', label: 'Auditoría', icon: ScrollText, roles: ['admin', 'gerente'] },
   { id: 'team', label: 'Equipo', icon: Users, roles: ['admin'] },
   { id: 'settings', label: 'Configuración', icon: Settings, roles: ['admin', 'gerente', 'cobrador'] },
@@ -52,7 +55,7 @@ export const Layout: React.FC<{
             <div className="w-10 h-10 bg-indigo-500 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/30 shrink-0">
               <Activity className="w-6 h-6" />
             </div>
-            <h1 className="text-lg font-black tracking-tight truncate">FinanzaPro</h1>
+            <h1 className="text-lg font-black tracking-tight truncate">DineroYa</h1>
           </div>
           <button onClick={() => setIsOpen(false)} className="lg:hidden"><X className="w-6 h-6" /></button>
         </div>
@@ -106,7 +109,7 @@ export const Layout: React.FC<{
             <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center">
               <Activity className="w-5 h-5 text-white" />
             </div>
-            <h1 className="font-black text-slate-900">FinanzaPro</h1>
+            <h1 className="font-black text-slate-900">DineroYa</h1>
           </div>
           <button onClick={() => setIsOpen(true)} className="p-2 bg-slate-100 rounded-lg">
             <Menu className="w-6 h-6 text-slate-600" />

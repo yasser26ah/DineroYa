@@ -2,7 +2,7 @@
 // DineroYa — Contexto de autenticación (roles por adaptador)
 // ============================================================================
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { getAdapter, isSupabaseConfigured, AuthUser } from '../services/dataAdapter';
+import { getAdapter, isSupabaseConfigured, AuthUser, SignUpOptions } from '../services/dataAdapter';
 
 interface AuthState {
   user: AuthUser | null;
@@ -10,7 +10,7 @@ interface AuthState {
   mode: 'local' | 'supabase';
   isSupabase: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, fullName: string) => Promise<void>;
+  signUp: (email: string, password: string, fullName: string, options?: SignUpOptions) => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   updatePassword: (newPassword: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -41,8 +41,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(u);
   }, [adapter]);
 
-  const signUp = useCallback(async (email: string, password: string, fullName: string) => {
-    await adapter.signUp(email, password, fullName);
+  const signUp = useCallback(async (email: string, password: string, fullName: string, options?: SignUpOptions) => {
+    await adapter.signUp(email, password, fullName, options);
   }, [adapter]);
 
   const resetPassword = useCallback(async (email: string) => {

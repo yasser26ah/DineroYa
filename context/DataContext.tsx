@@ -3,10 +3,12 @@
 // ============================================================================
 import React, { createContext, useContext, useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  AppSettings, AuditEvent, Client, CollectionActivity, CustomRole, Installment, Loan, Payment, Profile, UserRole,
-} from '../types';
+    AppSettings, AuditEvent, Client, CollectionActivity, CreditApplication, CreditApplicationStatus,
+    CustomRole, Installment, Loan, Payment, Profile, RestructureLoanInput, UserRole,
+  } from '../types';
+
 import {
-  DataAdapter, getAdapter, CreateLoanInput, PayInput, ActivityInput, NewClientInput,
+  DataAdapter, getAdapter, CreateLoanInput, PayInput, ActivityInput, NewClientInput, NewCreditApplicationInput,
 } from '../services/dataAdapter';
 import { buildDashboardStats, DashboardStatsLike } from '../lib/engine';
 
@@ -21,6 +23,7 @@ interface DataState {
   auditEvents: AuditEvent[];
   profiles: Profile[];
   roles: CustomRole[];
+  applications: CreditApplication[];
   saveRole: (role: CustomRole) => Promise<void>;
   deleteRole: (roleId: string) => Promise<void>;
   settings: AppSettings;
@@ -30,6 +33,7 @@ interface DataState {
   updateClient: (id: string, patch: Partial<NewClientInput> & { active?: boolean }) => Promise<void>;
   createLoan: (input: CreateLoanInput) => Promise<Loan>;
   cancelLoan: (id: string, reason: string) => Promise<void>;
+  restructureLoan: (input: RestructureLoanInput) => Promise<Loan>;
   assignLoan: (id: string, userId: string | null) => Promise<void>;
   registerPayment: (input: PayInput) => Promise<Payment>;
   voidPayment: (paymentId: string, reason: string) => Promise<void>;
@@ -37,6 +41,9 @@ interface DataState {
   updateSettings: (patch: Partial<AppSettings>) => Promise<AppSettings>;
   updateProfileRole: (userId: string, role: UserRole) => Promise<void>;
   toggleProfileActive: (userId: string, active: boolean) => Promise<void>;
+  createApplication: (input: NewCreditApplicationInput) => Promise<CreditApplication>;
+  updateApplicationStatus: (id: string, status: CreditApplicationStatus, reviewNotes?: string) => Promise<void>;
+  linkClientToProfile: (userId: string, clientId: string | null) => Promise<void>;
   refresh: () => Promise<void>;
 }
 
@@ -54,22 +61,25 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [roles, setRoles] = useState<CustomRole[]>([]);
+  const [applications, setApplications] = useState<CreditApplication[]>([]);
   const [settings, setSettings] = useState<AppSettings>({
-    currency: '$', defaultInterestRate: 15, companyName: 'FinanzaPro',
+    currency: '$', defaultInterestRate: 15, companyName: 'DineroYa',
   });
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [c, l, i, p, a, ev, pr, s] = await Promise.all([
+      const [c, l, i, p, a, ev, pr, s, apps] = await Promise.all([
         adapter.listClients(), adapter.listLoans(), adapter.listInstallments(),
         adapter.listPayments(), adapter.listActivities(), adapter.listAuditEvents(),
         adapter.listProfiles().catch(() => [] as Profile[]), adapter.getSettings(),
+        adapter.listApplications().catch(() => [] as CreditApplication[]),
       ]);
       const rs = await adapter.listRoles().catch(() => [] as CustomRole[]);
       setClients(c); setLoans(l); setInstallments(i); setPayments(p);
       setActivities(a); setAuditEvents(ev); setProfiles(pr); setSettings(s); setRoles(rs);
+      setApplications(apps);
     } catch (e: any) {
       setError(e?.message ?? 'Error cargando datos');
     } finally {
@@ -105,6 +115,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateClient = useCallback((id: string, patch: Partial<NewClientInput> & { active?: boolean }) => wrap(() => adapter.updateClient(id, patch)), [adapter, wrap]);
   const createLoan = useCallback((input: CreateLoanInput) => wrap(() => adapter.createLoan(input)), [adapter, wrap]);
   const cancelLoan = useCallback((id: string, reason: string) => wrap(() => adapter.cancelLoan(id, reason)), [adapter, wrap]);
+  const restructureLoan = useCallback((input: RestructureLoanInput) => wrap(() => adapter.restructureLoan(input)), [adapter, wrap]);
   const assignLoan = useCallback((id: string, userId: string | null) => wrap(() => adapter.assignLoan(id, userId)), [adapter, wrap]);
   const registerPayment = useCallback((input: PayInput) => wrap(() => adapter.registerPayment(input)), [adapter, wrap]);
   const voidPayment = useCallback((paymentId: string, reason: string) => wrap(() => adapter.voidPayment(paymentId, reason)), [adapter, wrap]);
@@ -124,6 +135,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setRoles(rs);
   }, [adapter, wrap]);
   const toggleProfileActive = useCallback((userId: string, active: boolean) => wrap(() => adapter.toggleProfileActive(userId, active)), [adapter, wrap]);
+  const createApplication = useCallback((input: NewCreditApplicationInput) => wrap(() => adapter.createApplication(input)), [adapter, wrap]);
+  const updateApplicationStatus = useCallback((id: string, status: CreditApplicationStatus, reviewNotes?: string) =>
+    wrap(() => adapter.updateApplicationStatus(id, status, reviewNotes)), [adapter, wrap]);
+  const linkClientToProfile = useCallback((userId: string, clientId: string | null) =>
+    wrap(() => adapter.linkClientToProfile(userId, clientId)), [adapter, wrap]);
 
   // --- Estadísticas derivadas ---------------------------------------------------
 
@@ -135,10 +151,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   return (
     <DataContext.Provider value={{
       loading, error, clients, loans, installments, payments, activities,
-      auditEvents, profiles, roles, settings, stats,
-      createClient, updateClient, createLoan, cancelLoan, assignLoan,
+      auditEvents, profiles, roles, applications, settings, stats,
+      createClient, updateClient, createLoan, cancelLoan, restructureLoan, assignLoan,
       registerPayment, voidPayment, logActivity, updateSettings,
-      updateProfileRole, toggleProfileActive, saveRole, deleteRole, refresh: load,
+      updateProfileRole, toggleProfileActive, createApplication, updateApplicationStatus,
+      linkClientToProfile, saveRole, deleteRole, refresh: load,
     }}>
       {children}
     </DataContext.Provider>

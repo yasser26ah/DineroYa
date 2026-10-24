@@ -9,9 +9,12 @@ import { Btn, Field, inputCls } from '../components/ui';
 export const LoginPage: React.FC = () => {
   const { signIn, signUp, resetPassword, isSupabase } = useAuth();
   const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>('signin');
+  const [accountType, setAccountType] = useState<'cliente' | 'equipo'>('cliente');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [document, setDocument] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
@@ -25,8 +28,17 @@ export const LoginPage: React.FC = () => {
       if (mode === 'signin') {
         await signIn(email, password);
       } else if (mode === 'signup') {
-        await signUp(email, password, fullName);
-        setError('Registro enviado. Si tu Supabase requiere confirmación por email, revísala y luego inicia sesión.');
+        await signUp(email, password, fullName, {
+          role: accountType === 'cliente' ? 'cliente' : 'cobrador',
+          phone: phone.trim() || undefined,
+          document: document.trim() || undefined,
+        });
+        setInfo(
+          isSupabase
+            ? 'Cuenta creada. Revisa tu correo y confirma la dirección para poder iniciar sesión. Si no llega en unos minutos, revisa spam o pide al administrador que active tu cuenta.'
+            : 'Cuenta creada. Ya puedes iniciar sesión.',
+        );
+        setMode('signin');
       } else {
         await resetPassword(email);
         setInfo('Si el email existe, te enviamos un enlace para crear una contraseña nueva. Revisa tu bandeja (y spam).');
@@ -41,7 +53,7 @@ export const LoginPage: React.FC = () => {
   const demoLogin = async () => {
     setBusy(true);
     try {
-      await signIn('demo@finanzapro.local', 'demo');
+      await signIn('demo@dineroya.local', 'demo');
     } finally {
       setBusy(false);
     }
@@ -61,7 +73,7 @@ export const LoginPage: React.FC = () => {
             <Activity className="w-8 h-8 text-white" />
           </div>
           <div>
-            <h1 className="text-3xl font-black text-white tracking-tight">FinanzaPro</h1>
+            <h1 className="text-3xl font-black text-white tracking-tight">DineroYa</h1>
             <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Cartera de Préstamos</p>
           </div>
         </div>
@@ -76,19 +88,93 @@ export const LoginPage: React.FC = () => {
 
           <form onSubmit={submit} className="flex flex-col gap-5">
             {mode === 'signup' && (
-              <Field label="Nombre completo">
-                <input required value={fullName} onChange={e => setFullName(e.target.value)} className={inputCls} />
-              </Field>
+              <>
+                <div>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Tipo de cuenta</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setAccountType('cliente')}
+                      className={`py-3 px-4 rounded-2xl text-xs font-black uppercase tracking-widest transition border ${
+                        accountType === 'cliente'
+                          ? 'bg-indigo-600 text-white border-indigo-600'
+                          : 'bg-slate-50 text-slate-500 border-slate-100 hover:bg-slate-100'
+                      }`}
+                    >
+                      Soy cliente
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAccountType('equipo')}
+                      className={`py-3 px-4 rounded-2xl text-xs font-black uppercase tracking-widest transition border ${
+                        accountType === 'equipo'
+                          ? 'bg-indigo-600 text-white border-indigo-600'
+                          : 'bg-slate-50 text-slate-500 border-slate-100 hover:bg-slate-100'
+                      }`}
+                    >
+                      Soy del equipo
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-slate-400 font-medium mt-2">
+                    {accountType === 'cliente'
+                      ? 'Tendrás tu propio portal para ver préstamos, cuotas y solicitar créditos.'
+                      : 'El primer usuario registrado queda como administrador. Los demás entran como cobradores hasta que un admin cambie su rol.'}
+                  </p>
+                </div>
+                <Field label="Nombre completo">
+                  <input required value={fullName} onChange={e => setFullName(e.target.value)} className={inputCls} />
+                </Field>
+                {accountType === 'cliente' && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Field label="Teléfono">
+                      <input value={phone} onChange={e => setPhone(e.target.value)} className={inputCls} placeholder="Ej: 3001234567" />
+                    </Field>
+                    <Field label="Documento">
+                      <input value={document} onChange={e => setDocument(e.target.value)} className={inputCls} placeholder="Ej: CC 1023456" />
+                    </Field>
+                  </div>
+                )}
+              </>
             )}
-            {mode !== 'signup' && (
-              <Field label="Email">
-                <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className={inputCls} />
-              </Field>
-            )}
-            {mode === 'signin' && (
+            <Field label="Email">
+              <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className={inputCls} />
+            </Field>
+            {mode !== 'forgot' && (
               <Field label="Contraseña">
-                <input type="password" required minLength={6} value={password} onChange={e => setPassword(e.target.value)} className={inputCls} />
+                <input type="password" required minLength={6} value={password} onChange={e => setPassword(e.target.value)} className={inputCls} placeholder="Mínimo 6 caracteres" />
               </Field>
+            )}
+
+            {mode === 'signin' && (
+              <div className="flex flex-col gap-3">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    required
+                    className="mt-0.5 w-4 h-4 shrink-0 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                  />
+                  <div>
+                    <p className="text-sm font-bold text-slate-800 leading-relaxed">Declaro ser mayor de edad (18 años como mínimo) y tener capacidad legal para usar esta plataforma.</p>
+                    <p className="text-[11px] text-slate-500 mt-1">Esta declaración es una medida técnica de recopilación de edad; no sustituye la evaluación legal del producto.</p>
+                  </div>
+                </label>
+
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    required
+                    className="mt-0.5 w-4 h-4 shrink-0 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                  />
+                  <div>
+                    <p className="text-sm font-bold text-slate-800 leading-relaxed">He leído y acepto los Términos de Uso y la Política de Privacidad.</p>
+                    <p className="text-[11px] text-slate-500 mt-1">Acepto el tratamiento de mis datos personales y, si corresponda, la comunicación de avisos necesarios para mi cuenta o crédito.</p>
+                  </div>
+                </label>
+
+                <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-[11px] font-bold text-indigo-600 hover:text-indigo-700 underline underline-offset-2">
+                  Leer Términos de uso y Privacidad
+                </a>
+              </div>
             )}
 
             {error && (
@@ -145,6 +231,20 @@ export const LoginPage: React.FC = () => {
               </p>
             </div>
           )}
+
+          <div className="mt-6 flex flex-col gap-3">
+            <div className="flex flex-wrap gap-2 text-[11px] font-bold text-slate-500 uppercase tracking-widest">
+              <a href="/terms" className="inline-flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-100 rounded-xl px-3 py-1.5 text-slate-600 transition-colors">
+                Términos de uso
+              </a>
+              <a href="/privacy" className="inline-flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-100 rounded-xl px-3 py-1.5 text-slate-600 transition-colors">
+                Privacidad y datos
+              </a>
+            </div>
+            <p className="text-[11px] text-slate-400 font-medium text-center leading-relaxed">
+              Lea los documentos legales antes de usar el servicio. Puede consultarlos cuando quiera desde el menú del producto.
+            </p>
+          </div>
         </div>
       </div>
     </div>

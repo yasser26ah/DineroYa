@@ -16,6 +16,10 @@ import { ClientsPage } from './pages/ClientsPage';
 import { AuditPage } from './pages/AuditPage';
 import { TeamPage } from './pages/TeamPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { ClientPortalPage } from './pages/ClientPortalPage';
+import { ApplicationsPage } from './pages/ApplicationsPage';
+import { TermsPage } from './pages/TermsPage';
+import { PrivacyPage } from './pages/PrivacyPage';
 
 const ErrorBanner: React.FC<{ message: string; onRetry: () => void }> = ({ message, onRetry }) => (
   <div className="mb-6 bg-rose-50 border border-rose-100 text-rose-700 p-4 rounded-2xl flex items-start justify-between gap-4">
@@ -102,7 +106,7 @@ const Shell: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
-        <div className="animate-pulse text-slate-400 font-black uppercase tracking-widest text-sm">Cargando FinanzaPro...</div>
+        <div className="animate-pulse text-slate-400 font-black uppercase tracking-widest text-sm">Cargando DineroYa...</div>
       </div>
     );
   }
@@ -128,18 +132,23 @@ const AppBody: React.FC<{ activeTab: string; onNavigate: (t: string) => void; is
   // Si la pestaña activa no está permitida por el rol, redirige a la primera permitida.
   const myProfile = profiles.find(p => p.id === user?.id);
   const allowed = myProfile?.screens;
-  const effectiveTab = (allowed && allowed.length > 0 && !allowed.includes(activeTab))
-    ? allowed[0]
-    : activeTab;
+  const isClient = user?.role === 'cliente';
+  const effectiveTab = isClient
+    ? 'portal'
+    : (allowed && allowed.length > 0 && !allowed.includes(activeTab)) ? allowed[0] : activeTab;
 
   const page = (() => {
     switch (effectiveTab) {
+      case 'portal': return <ClientPortalPage />;
+      case 'applications': return <ApplicationsPage />;
       case 'collections': return <CollectionsPage />;
       case 'loans': return <LoansPage />;
       case 'clients': return <ClientsPage />;
       case 'audit': return <AuditPage />;
       case 'team': return <TeamPage />;
       case 'settings': return <SettingsPage />;
+      case 'terms': return <TermsPage />;
+      case 'privacy': return <PrivacyPage />;
       default: return <DashboardPage onGoCollect={() => onNavigate('collections')} />;
     }
   })();

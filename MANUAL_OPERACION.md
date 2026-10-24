@@ -1,6 +1,6 @@
 <div align="center">
 
-# 📘 Manual de Operación — FinanzaPro (DineroYa)
+# 📘 Manual de Operación — DineroYa
 
 **Guía para el equipo de cobranza: accesos, usuarios, rutina diaria y qué hacer si algo falla.**
 

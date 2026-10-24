@@ -11,7 +11,7 @@ import { todayISO, daysBetween } from './format';
 export const EMPTY_SETTINGS: AppSettings = {
   currency: '$',
   defaultInterestRate: 15,
-  companyName: 'FinanzaPro',
+  companyName: 'DineroYa',
   moraRate: 5,
 };
 
@@ -61,6 +61,55 @@ export interface ScheduleRow {
   dueDate: string;
   amountDue: number;
 }
+
+export const restructureSchedule = (
+  remainingDue: number,
+  newPendingCount: number,
+  frequency: LoanFrequency,
+  firstDueDate: string,
+  startInstallmentNumber = 1,
+): ScheduleRow[] => {
+  if (newPendingCount < 1) throw new Error('Número de cuotas pendientes inválido');
+  if (remainingDue <= 0) throw new Error('No hay saldo pendiente para redistribuir');
+  const each = Number((remainingDue / newPendingCount).toFixed(2));
+  const last = Number((remainingDue - each * (newPendingCount - 1)).toFixed(2));
+  const stepDays = frequency === 'weekly' ? 7 : frequency === 'biweekly' ? 15 : 30;
+  const rows: ScheduleRow[] = [];
+  let due = firstDueDate;
+  for (let i = 1; i <= newPendingCount; i++) {
+    const installmentNumber = startInstallmentNumber + i - 1;
+    rows.push({ installmentNumber, dueDate: due, amountDue: i === newPendingCount ? last : each });
+    due = addDays(due, stepDays);
+  }
+  return rows;
+};
+
+/**
+ * Separa las cuotas de un préstamo en dos grupos para una reestructuración:
+ *  - keep: cuotas que deben conservarse (pagadas, condonadas o con saldo pagado > 0).
+ *  - pendingRemaining: saldo pendiente total y las cuotas actuales pendientes de reemplazar.
+ */
+export const splitInstallmentsForRestructure = (
+  installments: Installment[],
+): { keep: Installment[]; pendingRemaining: number; pendingCount: number } => {
+  let keep: Installment[] = [];
+  let pendingRemaining = 0;
+  let pendingCount = 0;
+
+  const ordered = [...installments].sort((a, b) => a.installmentNumber - b.installmentNumber);
+
+  for (const i of ordered) {
+    if (i.status === 'paid' || i.status === 'waived' || i.amountPaid > 0) {
+      // Las cuotas pagadas, condonadas o con abono conservan su historial.
+      keep.push(i);
+    } else {
+      pendingRemaining += i.amountDue - i.amountPaid;
+      pendingCount++;
+    }
+  }
+
+  return { keep, pendingRemaining, pendingCount };
+};
 
 export const generateSchedule = (
   principal: number,

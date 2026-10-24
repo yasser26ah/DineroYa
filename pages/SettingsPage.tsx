@@ -21,7 +21,7 @@ export const SettingsPage: React.FC = () => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     await updateSettings({
-      companyName: String(fd.get('companyName') ?? '').trim() || 'FinanzaPro',
+      companyName: String(fd.get('companyName') ?? '').trim() || 'DineroYa',
       currency: String(fd.get('currency') ?? '$').trim() || '$',
       defaultInterestRate: Number(fd.get('rate') ?? 15),
       moraRate: Math.max(0, Number(fd.get('moraRate') ?? 0)),

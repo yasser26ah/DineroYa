@@ -1,6 +1,6 @@
 <div align="center">
 
-# FinanzaPro — DineroYa · Cartera de Préstamos
+# DineroYa — Cartera de Préstamos
 
 **Seguimiento · Trazabilidad · Gestión de Cobranza**
 
@@ -28,9 +28,22 @@ Aplicación para operar préstamos de cartera propia con tres pilares:
 
 ## Roles
 
-- **Administrador**: acceso total (configuración, equipo, cancelaciones, auditoría).
-- **Gerente**: ve toda la cartera y auditoría; no gestiona usuarios.
+- **Administrador**: acceso total (configuración, equipo, cancelaciones, auditoría, solicitudes).
+- **Gerente**: ve toda la cartera, auditoría y solicitudes; no gestiona usuarios.
 - **Cobrador**: ve y opera solo los préstamos asignados a él (RLS en Supabase).
+- **Cliente**: portal de autoservicio. Ve únicamente sus préstamos y cuotas, y envía solicitudes de crédito. No accede a la cartera interna.
+
+## Portal del cliente
+
+El cliente se registra desde **Crear cuenta → Soy cliente**. Al confirmar su correo:
+
+1. Se crea su ficha en `clients` y se vincula a su usuario (`profiles.client_id`).
+2. Entra a **Mi portal**, donde ve saldo, próxima cuota, mora, sus préstamos y el calendario de cuotas.
+3. Puede enviar **solicitudes de crédito** con monto, destino y notas.
+4. El administrador o gerente las revisa en **Solicitudes**, las aprueba o rechaza con una respuesta que el cliente ve en su portal.
+
+Las políticas RLS impiden que un cliente vea clientes, préstamos, cuotas o pagos de otras personas.
+
 
 ## Dos modos de operación
 
@@ -58,6 +71,28 @@ Postgres + autenticación + Row Level Security + auditoría por triggers.
 
 5. `npm run dev` → regístrate; **el primer usuario queda como administrador**.
 6. Opcional: configura `GEMINI_API_KEY` para la redacción de mensajes con IA.
+
+### Proyecto Supabase ya existente
+
+Si ya ejecutaste `schema.sql` antes de esta versión, ejecuta **una sola vez**
+`migration_portal_cliente.sql` en el SQL Editor. Añade el rol `cliente`, la tabla
+`credit_applications`, el vínculo `profiles.client_id`, las políticas RLS del portal
+y la función `fn_restructure_loan`. Es idempotente.
+
+### Crear el primer administrador sin depender del correo
+
+1. Supabase → **Authentication → Users → Add user**.
+2. Escribe email y contraseña y marca **Auto Confirm User**.
+3. Ese primer perfil queda como `admin` automáticamente.
+4. Entra a la app con esas credenciales.
+
+### Correo de confirmación
+
+Con `mailer_autoconfirm` desactivado (por defecto), cada cliente debe confirmar su
+correo antes de entrar. Para pruebas puedes desactivarlo en
+**Authentication → Providers → Email → Confirm email**, o crear los usuarios desde
+el panel con **Auto Confirm User**.
+
 
 ## Lógica de negocio
 
