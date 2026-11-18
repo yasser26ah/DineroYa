@@ -2,7 +2,7 @@
 // DineroYa — Contratos de entrada/salida de la capa de datos
 // ============================================================================
 import {
-  AppNotification, AppSettings, AuditEvent, CashSession, Client, CollectionActivity, CreditApplication,
+  AppNotification, AppSettings, AuditEvent, Client, CollectionActivity, CreditApplication,
   CreditApplicationStatus, CustomRole, Installment, Loan, NotificationStatus, NotificationTemplate, Payment,
   NotificationChannel, PaymentChannel, PaymentChannelKind, PaymentMethodOption, Profile, RestructureLoanInput, UserRole,
 } from '../types';
@@ -134,15 +134,12 @@ export interface DataAdapter {
   toggleProfileActive(userId: string, active: boolean): Promise<void>;
   savePaymentMethod(input: { id?: string; name: string; active?: boolean }): Promise<PaymentMethodOption>;
 
-  // Notificaciones, caja y canales de pago
+  // Notificaciones y canales de pago
   listNotificationTemplates(): Promise<NotificationTemplate[]>;
   saveNotificationTemplate(input: NotificationTemplate): Promise<NotificationTemplate>;
   listNotifications(): Promise<AppNotification[]>;
   createNotification(input: NewNotificationInput): Promise<AppNotification>;
   setNotificationStatus(id: string, status: NotificationStatus): Promise<void>;
-  listCashSessions(): Promise<CashSession[]>;
-  openCashSession(openingAmount: number): Promise<CashSession>;
-  closeCashSession(id: string, countedAmount: number, notes?: string): Promise<CashSession>;
   listPaymentChannels(): Promise<PaymentChannel[]>;
   savePaymentChannel(input: PaymentChannelInput): Promise<PaymentChannel>;
 

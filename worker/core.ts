@@ -52,6 +52,8 @@ export async function readState(env: Env): Promise<{ keys: Record<string, string
   if (row?.data) {
     try { keys = JSON.parse(row.data) as Record<string, string>; } catch { keys = {}; }
   }
+  // Resto del módulo de Caja retirado: desaparece del estado al siguiente guardado.
+  delete keys.db_cash_sessions;
   return { keys, rev: row?.rev ?? 0 };
 }
 
@@ -81,7 +83,6 @@ export function toClient(keys: Record<string, string>) {
     paymentMethods: get('db_payment_methods', []),
     notificationTemplates: get('db_notification_templates', []),
     notifications: get('db_notifications', []),
-    cashSessions: get('db_cash_sessions', []),
     paymentChannels: get('db_payment_channels', []),
     settings: get('db_settings', null),
   };
@@ -153,8 +154,6 @@ export const OPS: Record<string, (a: LocalDataAdapter, x: Args) => unknown> = {
   saveNotificationTemplate: (a, x) => a.saveNotificationTemplate(x),
   createNotification: (a, x) => a.createNotification(x),
   setNotificationStatus: (a, x) => a.setNotificationStatus(x.id, x.status),
-  openCashSession: (a, x) => a.openCashSession(x.openingAmount),
-  closeCashSession: (a, x) => a.closeCashSession(x.id, x.countedAmount, x.notes),
   savePaymentChannel: (a, x) => a.savePaymentChannel(x),
   createApplication: (a, x) => a.createApplication(x),
   updateApplicationStatus: (a, x) => a.updateApplicationStatus(x.id, x.status, x.reviewNotes, x.approvedAmount),

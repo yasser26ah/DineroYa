@@ -6,7 +6,7 @@
 // ============================================================================
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import {
-  AppNotification, AppSettings, AuditEvent, CashSession, Client, CollectionActivity, CreditApplication,
+  AppNotification, AppSettings, AuditEvent, Client, CollectionActivity, CreditApplication,
   CreditApplicationStatus, CustomRole, Installment, Loan, NotificationStatus, NotificationTemplate, Payment,
   PaymentChannel, PaymentChannelKind, PaymentMethodOption, Profile, RestructureLoanInput, UserRole,
 } from '../types';
@@ -106,15 +106,6 @@ const mapNotificationTemplate = (r: any): NotificationTemplate => ({
 const mapNotification = (r: any): AppNotification => ({
   id: r.id, clientId: r.client_id, loanId: r.loan_id, channel: r.channel, templateId: r.template_id,
   title: r.title, body: r.body, status: r.status, createdAt: r.created_at, sentAt: r.sent_at,
-});
-
-const mapCashSession = (r: any): CashSession => ({
-  id: r.id, openedBy: r.opened_by, openedAt: r.opened_at, closedAt: r.closed_at,
-  openingAmount: Number(r.opening_amount),
-  countedAmount: r.counted_amount != null ? Number(r.counted_amount) : null,
-  expectedAmount: r.expected_amount != null ? Number(r.expected_amount) : null,
-  difference: r.difference != null ? Number(r.difference) : null,
-  notes: r.notes ?? undefined, status: r.status,
 });
 
 const mapPaymentChannel = (r: any): PaymentChannel => ({
@@ -288,40 +279,6 @@ export class SupabaseAdapter implements DataAdapter {
     if (status === 'sent') patch.sent_at = new Date().toISOString();
     const { error } = await this.db.from('notifications').update(patch).eq('id', id);
     if (error) throw new Error(error.message);
-  }
-
-  async listCashSessions(): Promise<CashSession[]> {
-    const { data, error } = await this.db.from('cash_sessions')
-      .select('*').order('opened_at', { ascending: false }).limit(200);
-    if (error) throw new Error(error.message);
-    return (data ?? []).map(mapCashSession);
-  }
-
-  async openCashSession(openingAmount: number): Promise<CashSession> {
-    const { data: auth } = await this.db.auth.getUser();
-    const { data, error } = await this.db.from('cash_sessions').insert({
-      opening_amount: openingAmount, opened_by: auth.user?.id ?? null, status: 'open',
-    }).select().single();
-    if (error) throw new Error(error.message);
-    return mapCashSession(data);
-  }
-
-  async closeCashSession(id: string, countedAmount: number, notes?: string): Promise<CashSession> {
-    const { data: session, error: e0 } = await this.db.from('cash_sessions').select('*').eq('id', id).single();
-    if (e0) throw new Error(e0.message);
-    const { data: pays } = await this.db.from('payments')
-      .select('amount, notes').gte('created_at', session.opened_at);
-    const collected = (pays ?? [])
-      .filter((p: any) => !(p.notes ?? '').includes('ANULADO'))
-      .reduce((a: number, p: any) => a + Number(p.amount), 0);
-    const expected = Number((Number(session.opening_amount) + collected).toFixed(2));
-    const { data, error } = await this.db.from('cash_sessions').update({
-      counted_amount: countedAmount, expected_amount: expected,
-      difference: Number((countedAmount - expected).toFixed(2)),
-      notes: notes ?? null, closed_at: new Date().toISOString(), status: 'closed',
-    }).eq('id', id).select().single();
-    if (error) throw new Error(error.message);
-    return mapCashSession(data);
   }
 
   async listPaymentChannels(): Promise<PaymentChannel[]> {

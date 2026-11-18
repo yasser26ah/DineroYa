@@ -3,7 +3,7 @@
 // ============================================================================
 import React, { createContext, useContext, useCallback, useEffect, useMemo, useState } from 'react';
 import {
-    AppNotification, AppSettings, AuditEvent, CashSession, Client, CollectionActivity, CreditApplication,
+    AppNotification, AppSettings, AuditEvent, Client, CollectionActivity, CreditApplication,
     CreditApplicationStatus, CustomRole, Installment, Loan, NotificationStatus, NotificationTemplate, Payment,
     PaymentChannel, PaymentMethodOption, Profile, RestructureLoanInput, UserRole,
   } from '../types';
@@ -29,7 +29,6 @@ interface DataState {
   paymentMethods: PaymentMethodOption[];
   notificationTemplates: NotificationTemplate[];
   notifications: AppNotification[];
-  cashSessions: CashSession[];
   paymentChannels: PaymentChannel[];
   saveRole: (role: CustomRole) => Promise<void>;
   deleteRole: (roleId: string) => Promise<void>;
@@ -52,8 +51,6 @@ interface DataState {
   saveNotificationTemplate: (input: NotificationTemplate) => Promise<NotificationTemplate>;
   createNotification: (input: NewNotificationInput) => Promise<AppNotification>;
   setNotificationStatus: (id: string, status: NotificationStatus) => Promise<void>;
-  openCashSession: (openingAmount: number) => Promise<CashSession>;
-  closeCashSession: (id: string, countedAmount: number, notes?: string) => Promise<CashSession>;
   savePaymentChannel: (input: PaymentChannelInput) => Promise<PaymentChannel>;
   createApplication: (input: NewCreditApplicationInput) => Promise<CreditApplication>;
   updateApplicationStatus: (
@@ -85,7 +82,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethodOption[]>([]);
   const [notificationTemplates, setNotificationTemplates] = useState<NotificationTemplate[]>([]);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
-  const [cashSessions, setCashSessions] = useState<CashSession[]>([]);
   const [paymentChannels, setPaymentChannels] = useState<PaymentChannel[]>([]);
   const [settings, setSettings] = useState<AppSettings>({
     currency: '$', defaultInterestRate: 15, companyName: 'DineroYa',
@@ -95,7 +91,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(true);
     setError(null);
     try {
-      const [c, l, i, p, a, ev, pr, s, apps, pm, tpl, notif, cash, chans] = await Promise.all([
+      const [c, l, i, p, a, ev, pr, s, apps, pm, tpl, notif, chans] = await Promise.all([
         adapter.listClients(), adapter.listLoans(), adapter.listInstallments(),
         adapter.listPayments(), adapter.listActivities(), adapter.listAuditEvents(),
         adapter.listProfiles().catch(() => [] as Profile[]), adapter.getSettings(),
@@ -103,7 +99,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         adapter.listPaymentMethods().catch(() => [] as PaymentMethodOption[]),
         adapter.listNotificationTemplates().catch(() => [] as NotificationTemplate[]),
         adapter.listNotifications().catch(() => [] as AppNotification[]),
-        adapter.listCashSessions().catch(() => [] as CashSession[]),
         adapter.listPaymentChannels().catch(() => [] as PaymentChannel[]),
       ]);
       const rs = await adapter.listRoles().catch(() => [] as CustomRole[]);
@@ -112,7 +107,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setApplications(apps);
       setPaymentMethods(pm);
       setNotificationTemplates(tpl); setNotifications(notif);
-      setCashSessions(cash); setPaymentChannels(chans);
+      setPaymentChannels(chans);
     } catch (e: any) {
       setError(e?.message ?? 'Error cargando datos');
     } finally {
@@ -193,18 +188,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       : n)));
   }, [adapter, wrap]);
 
-  const openCashSession = useCallback(async (openingAmount: number) => {
-    const session = await wrap(() => adapter.openCashSession(openingAmount));
-    setCashSessions(prev => [session, ...prev]);
-    return session;
-  }, [adapter, wrap]);
-
-  const closeCashSession = useCallback(async (id: string, countedAmount: number, notes?: string) => {
-    const session = await wrap(() => adapter.closeCashSession(id, countedAmount, notes));
-    setCashSessions(prev => prev.map(s => (s.id === id ? session : s)));
-    return session;
-  }, [adapter, wrap]);
-
   const savePaymentChannel = useCallback(async (input: PaymentChannelInput) => {
     const saved = await wrap(() => adapter.savePaymentChannel(input));
     setPaymentChannels(prev => [...prev.filter(c => c.id !== saved.id), saved].sort((a, b) => a.sortOrder - b.sortOrder));
@@ -234,12 +217,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <DataContext.Provider value={{
       loading, error, clients, loans, installments, payments, activities,
       auditEvents, profiles, roles, applications, settings, stats, paymentMethods,
-      notificationTemplates, notifications, cashSessions, paymentChannels,
+      notificationTemplates, notifications, paymentChannels,
       createClient, updateClient, createLoan, cancelLoan, restructureLoan, assignLoan,
       registerPayment, voidPayment, logActivity, updateSettings,
       updateProfileRole, toggleProfileActive, createApplication, updateApplicationStatus,
       savePaymentMethod, saveNotificationTemplate, createNotification, setNotificationStatus,
-      openCashSession, closeCashSession, savePaymentChannel,
+      savePaymentChannel,
       linkClientToProfile, importBackup, saveRole, deleteRole, refresh: load,
     }}>
       {children}

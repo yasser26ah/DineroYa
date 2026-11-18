@@ -3,7 +3,7 @@
 // El servidor ejecuta la misma lógica de negocio y guarda el estado en D1.
 // ============================================================================
 import {
-  AppNotification, AppSettings, AuditEvent, CashSession, Client, CollectionActivity, CreditApplication,
+  AppNotification, AppSettings, AuditEvent, Client, CollectionActivity, CreditApplication,
   CreditApplicationStatus, CustomRole, Installment, Loan, NotificationStatus, NotificationTemplate, Payment,
   PaymentChannel, PaymentMethodOption, Profile, RestructureLoanInput,
 } from '../types';
@@ -27,7 +27,6 @@ interface Snapshot {
   paymentMethods: PaymentMethodOption[];
   notificationTemplates: NotificationTemplate[];
   notifications: AppNotification[];
-  cashSessions: CashSession[];
   paymentChannels: PaymentChannel[];
   settings: AppSettings | null;
 }
@@ -35,7 +34,7 @@ interface Snapshot {
 const EMPTY: Snapshot = {
   profiles: [], roles: [], clients: [], loans: [], installments: [], payments: [], activities: [],
   auditEvents: [], applications: [], paymentMethods: [], notificationTemplates: [], notifications: [],
-  cashSessions: [], paymentChannels: [], settings: null,
+  paymentChannels: [], settings: null,
 };
 
 export class ApiDataAdapter implements DataAdapter {
@@ -123,9 +122,6 @@ export class ApiDataAdapter implements DataAdapter {
   async listNotifications(): Promise<AppNotification[]> {
     return [...(await this.ensure()).notifications].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }
-  async listCashSessions(): Promise<CashSession[]> {
-    return [...(await this.ensure()).cashSessions].sort((a, b) => b.openedAt.localeCompare(a.openedAt));
-  }
   async listPaymentChannels(): Promise<PaymentChannel[]> {
     return [...(await this.ensure()).paymentChannels].sort((a, b) => a.sortOrder - b.sortOrder);
   }
@@ -168,12 +164,6 @@ export class ApiDataAdapter implements DataAdapter {
   createNotification(input: NewNotificationInput): Promise<AppNotification> { return this.op('createNotification', input); }
   setNotificationStatus(id: string, status: NotificationStatus): Promise<void> {
     return this.op('setNotificationStatus', { id, status });
-  }
-  openCashSession(openingAmount: number): Promise<CashSession> {
-    return this.op('openCashSession', { openingAmount });
-  }
-  closeCashSession(id: string, countedAmount: number, notes?: string): Promise<CashSession> {
-    return this.op('closeCashSession', { id, countedAmount, notes });
   }
   savePaymentChannel(input: PaymentChannelInput): Promise<PaymentChannel> {
     return this.op('savePaymentChannel', input);

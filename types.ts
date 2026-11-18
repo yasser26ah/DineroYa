@@ -216,22 +216,7 @@ export const NOTIFICATION_STATUS_LABELS: Record<NotificationStatus, string> = {
   cancelled: 'Descartada',
 };
 
-// --- Caja y tesorería ---
 
-export type CashSessionStatus = 'open' | 'closed';
-
-export interface CashSession {
-  id: string;
-  openedBy?: string | null;
-  openedAt: string;
-  closedAt?: string | null;
-  openingAmount: number;
-  countedAmount?: number | null;
-  expectedAmount?: number | null;
-  difference?: number | null;
-  notes?: string;
-  status: CashSessionStatus;
-}
 
 // --- Canales de pago y pasarelas ---
 

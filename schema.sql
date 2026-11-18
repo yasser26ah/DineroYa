@@ -1109,26 +1109,7 @@ CREATE TABLE IF NOT EXISTS notifications (
 CREATE INDEX IF NOT EXISTS idx_notifications_status ON notifications(status, created_at DESC);
 
 -- ----------------------------------------------------------------------------
--- 2. Caja y tesorería (cierre / arqueo)
--- ----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS cash_sessions (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  opened_by UUID REFERENCES auth.users(id),
-  opened_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  opening_amount DECIMAL(15,2) NOT NULL DEFAULT 0 CHECK (opening_amount >= 0),
-  closed_at TIMESTAMPTZ,
-  counted_amount DECIMAL(15,2),
-  expected_amount DECIMAL(15,2),
-  difference DECIMAL(15,2),
-  notes TEXT,
-  status VARCHAR(10) NOT NULL DEFAULT 'open' CHECK (status IN ('open','closed'))
-);
-
--- Solo puede haber una caja abierta a la vez.
-CREATE UNIQUE INDEX IF NOT EXISTS idx_cash_one_open ON cash_sessions(status) WHERE status = 'open';
-
--- ----------------------------------------------------------------------------
--- 3. Canales de pago y pasarelas
+-- 2. Canales de pago y pasarelas
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS payment_channels (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -1152,11 +1133,10 @@ SELECT 'Transferencia bancaria', 'bank_account', NULL, 'Envía el comprobante po
 WHERE (SELECT count(*) FROM payment_channels) = 1;
 
 -- ----------------------------------------------------------------------------
--- 4. Seguridad (RLS) y permisos
+-- 3. Seguridad (RLS) y permisos
 -- ----------------------------------------------------------------------------
 ALTER TABLE notification_templates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
-ALTER TABLE cash_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE payment_channels ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "notification_templates_staff" ON notification_templates;
@@ -1167,10 +1147,6 @@ DROP POLICY IF EXISTS "notifications_staff" ON notifications;
 CREATE POLICY "notifications_staff" ON notifications FOR ALL TO authenticated
   USING (NOT (SELECT fn_is_client())) WITH CHECK (NOT (SELECT fn_is_client()));
 
-DROP POLICY IF EXISTS "cash_sessions_staff" ON cash_sessions;
-CREATE POLICY "cash_sessions_staff" ON cash_sessions FOR ALL TO authenticated
-  USING (NOT (SELECT fn_is_client())) WITH CHECK (NOT (SELECT fn_is_client()));
-
 -- Los canales sí los ve el cliente en el portal; solo el admin los edita.
 DROP POLICY IF EXISTS "payment_channels_read" ON payment_channels;
 CREATE POLICY "payment_channels_read" ON payment_channels FOR SELECT TO authenticated USING (TRUE);
@@ -1178,13 +1154,11 @@ DROP POLICY IF EXISTS "payment_channels_write" ON payment_channels;
 CREATE POLICY "payment_channels_write" ON payment_channels FOR ALL TO authenticated
   USING (fn_has_perm('editSettings')) WITH CHECK (fn_has_perm('editSettings'));
 
-GRANT SELECT, INSERT, UPDATE ON notification_templates, notifications, cash_sessions, payment_channels TO authenticated;
+GRANT SELECT, INSERT, UPDATE ON notification_templates, notifications, payment_channels TO authenticated;
 
 -- Pantallas nuevas por rol.
 UPDATE roles SET screens = array_append(screens, 'notifications')
   WHERE id IN ('admin','gerente','cobrador') AND NOT ('notifications' = ANY(screens));
-UPDATE roles SET screens = array_append(screens, 'cash')
-  WHERE id IN ('admin','gerente','cobrador') AND NOT ('cash' = ANY(screens));
 UPDATE roles SET screens = array_append(screens, 'channels')
   WHERE id IN ('admin','gerente') AND NOT ('channels' = ANY(screens));
 UPDATE roles SET screens = array_append(screens, 'reports')

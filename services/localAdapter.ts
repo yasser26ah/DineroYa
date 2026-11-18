@@ -2,7 +2,7 @@
 // DineroYa — Adaptador local (navegador o estado en memoria del servidor)
 // ============================================================================
 import {
-  AppNotification, AppSettings, AuditEvent, CashSession, Client, CollectionActivity, CreditApplication,
+  AppNotification, AppSettings, AuditEvent, Client, CollectionActivity, CreditApplication,
   CreditApplicationStatus, CustomRole, Installment, Loan, NotificationStatus, NotificationTemplate, Payment,
   PaymentChannel, PaymentChannelKind, PaymentMethodOption, Profile, RestructureLoanInput, UserRole,
 } from '../types';
@@ -66,7 +66,6 @@ const LS = {
   paymentMethods: 'db_payment_methods',
   notificationTemplates: 'db_notification_templates',
   notifications: 'db_notifications',
-  cashSessions: 'db_cash_sessions',
   paymentChannels: 'db_payment_channels',
   profiles: 'db_profiles',
   roles: 'db_roles',
@@ -142,7 +141,6 @@ export class LocalDataAdapter implements DataAdapter {
   private paymentMethods: PaymentMethodOption[] = [];
   private notificationTemplates: NotificationTemplate[] = [];
   private notifications: AppNotification[] = [];
-  private cashSessions: CashSession[] = [];
   private paymentChannels: PaymentChannel[] = [];
   private settings: AppSettings = { ...DEFAULT_SETTINGS };
 
@@ -163,7 +161,6 @@ export class LocalDataAdapter implements DataAdapter {
     this.paymentMethods = read<PaymentMethodOption[]>(LS.paymentMethods, DEFAULT_PAYMENT_METHODS);
     this.notificationTemplates = read<NotificationTemplate[]>(LS.notificationTemplates, DEFAULT_NOTIFICATION_TEMPLATES);
     this.notifications = read<AppNotification[]>(LS.notifications, []);
-    this.cashSessions = read<CashSession[]>(LS.cashSessions, []);
     this.paymentChannels = read<PaymentChannel[]>(LS.paymentChannels, DEFAULT_PAYMENT_CHANNELS);
     this.settings = { ...EMPTY_SETTINGS, ...read<Partial<AppSettings>>(LS.settings, {}) };
     this.profiles = read<Profile[]>(LS.profiles, []);
@@ -197,7 +194,6 @@ export class LocalDataAdapter implements DataAdapter {
     write(LS.paymentMethods, this.paymentMethods);
     write(LS.notificationTemplates, this.notificationTemplates);
     write(LS.notifications, this.notifications);
-    write(LS.cashSessions, this.cashSessions);
     write(LS.paymentChannels, this.paymentChannels);
     write(LS.activities, this.activities);
     write(LS.profiles, this.profiles);
@@ -488,39 +484,6 @@ export class LocalDataAdapter implements DataAdapter {
     write(LS.notifications, this.notifications);
   }
 
-  async listCashSessions(): Promise<CashSession[]> {
-    return [...this.cashSessions].sort((a, b) => b.openedAt.localeCompare(a.openedAt));
-  }
-
-  async openCashSession(openingAmount: number): Promise<CashSession> {
-    if (this.cashSessions.some(s => s.status === 'open')) throw new Error('Ya hay una caja abierta');
-    const session: CashSession = {
-      id: uid(), openedBy: this.actor.id, openedAt: new Date().toISOString(),
-      openingAmount, status: 'open', countedAmount: null, expectedAmount: null, difference: null,
-    };
-    this.cashSessions.unshift(session);
-    write(LS.cashSessions, this.cashSessions);
-    return { ...session };
-  }
-
-  async closeCashSession(id: string, countedAmount: number, notes?: string): Promise<CashSession> {
-    const session = this.cashSessions.find(s => s.id === id);
-    if (!session) throw new Error('Caja no encontrada');
-    if (session.status === 'closed') throw new Error('Esa caja ya está cerrada');
-    const collected = this.payments
-      .filter(p => p.createdAt >= session.openedAt && !p.notes?.includes('ANULADO'))
-      .reduce((a, p) => a + p.amount, 0);
-    session.expectedAmount = Number((session.openingAmount + collected).toFixed(2));
-    session.countedAmount = countedAmount;
-    session.difference = Number((countedAmount - session.expectedAmount).toFixed(2));
-    session.notes = notes;
-    session.closedAt = new Date().toISOString();
-    session.status = 'closed';
-    write(LS.cashSessions, this.cashSessions);
-    this.auditEvent('cash_sessions', id, 'CLOSE', { countedAmount, expected: session.expectedAmount });
-    return { ...session };
-  }
-
   async listPaymentChannels(): Promise<PaymentChannel[]> {
     return [...this.paymentChannels].sort((a, b) => a.sortOrder - b.sortOrder);
   }
@@ -748,7 +711,6 @@ export class LocalDataAdapter implements DataAdapter {
     this.activities = pick<CollectionActivity>('activities', 'db_activities') ?? [];
     this.applications = pick<CreditApplication>('applications', 'db_applications') ?? [];
     this.notifications = pick<AppNotification>('notifications', 'db_notifications') ?? [];
-    this.cashSessions = pick<CashSession>('cashSessions', 'db_cash_sessions') ?? [];
 
     const methods = pick<PaymentMethodOption>('paymentMethods', 'db_payment_methods');
     if (methods && methods.length) this.paymentMethods = methods;
