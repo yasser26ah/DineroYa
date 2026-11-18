@@ -17,6 +17,7 @@ import type { NavTarget, TabId } from '../lib/nav';
 import { AnimatedIcon, IconMotionKind } from './AnimatedIcon';
 import { animateDrawer, revealSubitems } from '../lib/motion';
 import { useMediaQuery } from '../lib/useMediaQuery';
+import { SCREEN_ROLES, canAccessScreen } from '../lib/access';
 
 interface NavChild {
   id: string;
@@ -158,16 +159,16 @@ export const Layout: React.FC<{
   };
 
   const pendingNotifications = notifications.filter(n => n.status === 'pending').length;
-  const canManageChannels = user ? user.role === 'admin' || user.role === 'gerente' : false;
+  const canManageChannels = user?.role === 'admin' || user?.role === 'gerente';
 
   const items: NavItem[] = [
-    { id: 'portal', label: 'Mi portal', icon: Home, roles: ['cliente'] },
-    { id: 'dashboard', label: 'Resumen global', icon: PieChart, roles: ['admin', 'gerente', 'cobrador'] },
+    { id: 'portal', label: 'Mi portal', icon: Home, roles: SCREEN_ROLES.portal },
+    { id: 'dashboard', label: 'Resumen global', icon: PieChart, roles: SCREEN_ROLES.dashboard },
     {
       id: 'collections',
       label: 'Cobranza del Día',
       icon: HandCoins,
-      roles: ['admin', 'gerente', 'cobrador'],
+      roles: SCREEN_ROLES.collections,
       kind: 'bell',
       children: [
         { id: 'collections-today', label: 'Casos de hoy', icon: HandCoins, target: { tab: 'collections', collections: 'today', settings: 'general' } },
@@ -180,17 +181,17 @@ export const Layout: React.FC<{
         },
       ],
     },
-    { id: 'loans', label: 'Préstamos', icon: Wallet, roles: ['admin', 'gerente', 'cobrador'] },
-    { id: 'payments', label: 'Recaudos', icon: Banknote, roles: ['admin', 'gerente', 'cobrador'] },
-    { id: 'clients', label: 'Clientes', icon: Users, roles: ['admin', 'gerente', 'cobrador'] },
-    { id: 'applications', label: 'Solicitudes', icon: ClipboardList, roles: ['admin', 'gerente'] },
-    { id: 'reports', label: 'Reportes', icon: BarChart3, roles: ['admin', 'gerente'] },
-    { id: 'team', label: 'Equipo', icon: Users, roles: ['admin'] },
+    { id: 'loans', label: 'Préstamos', icon: Wallet, roles: SCREEN_ROLES.loans },
+    { id: 'payments', label: 'Recaudos', icon: Banknote, roles: SCREEN_ROLES.payments },
+    { id: 'clients', label: 'Clientes', icon: Users, roles: SCREEN_ROLES.clients },
+    { id: 'applications', label: 'Solicitudes', icon: ClipboardList, roles: SCREEN_ROLES.applications },
+    { id: 'reports', label: 'Reportes', icon: BarChart3, roles: SCREEN_ROLES.reports },
+    { id: 'team', label: 'Equipo', icon: Users, roles: SCREEN_ROLES.team },
     {
       id: 'settings',
       label: 'Configuración',
       icon: Settings,
-      roles: ['admin', 'gerente', 'cobrador'],
+      roles: SCREEN_ROLES.settings,
       kind: 'gear',
       children: canManageChannels
         ? [
@@ -202,16 +203,10 @@ export const Layout: React.FC<{
   ];
 
   // Pantallas permitidas: rol estándar o rol personalizado con screens.
-  // "audit" era la pantalla del módulo anterior; ahora vive dentro de Configuración.
-  const rawScreens = profiles.find(p => p.id === user?.id)?.screens;
-  const allowedScreens = rawScreens && rawScreens.length > 0
-    ? [...new Set(rawScreens.map(screen => (screen === 'audit' ? 'settings' : screen)))]
-    : undefined;
+  // "audit" heredado se traduce a Configuración dentro de lib/access.ts.
+  const screens = profiles.find(p => p.id === user?.id)?.screens;
 
-  const canSee = (item: NavItem): boolean => {
-    if (!user || !item.roles.includes(user.role)) return false;
-    return !allowedScreens || allowedScreens.includes(item.id);
-  };
+  const canSee = (item: NavItem): boolean => canAccessScreen(item.id, user?.role, screens);
 
   const visibleItems = items.filter(canSee);
   const groupItems = (ids: TabId[]) => ids.map(id => visibleItems.find(i => i.id === id)).filter((i): i is NavItem => Boolean(i));

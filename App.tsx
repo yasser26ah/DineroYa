@@ -6,7 +6,7 @@
 // rutas heredadas. Notificaciones vive dentro de Cobranza; Canales de pago y
 // Log viven dentro de Configuración; Caja ya no forma parte del producto.
 // ============================================================================
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { AlertTriangle, KeyRound } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { DataProvider, useData } from './context/DataContext';
@@ -24,6 +24,7 @@ import { ApplicationsPage } from './pages/ApplicationsPage';
 import { PaymentsPage } from './pages/PaymentsPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { DEFAULT_TARGET, targetFromHash, targetToHash } from './lib/nav';
+import { resolveTab } from './lib/access';
 import type { NavTarget, TabId } from './lib/nav';
 
 const ErrorBanner: React.FC<{ message: string; onRetry: () => void }> = ({ message, onRetry }) => (
@@ -161,20 +162,8 @@ const AppBody: React.FC<{ target: NavTarget; onNavigate: (target: NavTarget) => 
 
   const myProfile = profiles.find(p => p.id === user?.id);
 
-  // Pantallas permitidas. "audit" era el id del módulo anterior: ahora Log
-  // forma parte de Configuración, así que se traduce en lugar de quedar fuera.
-  const allowed = useMemo(() => {
-    const raw = myProfile?.screens;
-    if (!raw || raw.length === 0) return undefined;
-    return [...new Set(raw.map(screen => (screen === 'audit' ? 'settings' : screen)))];
-  }, [myProfile]);
-
-  const isClient = user?.role === 'cliente';
-  const effectiveTab: TabId = isClient
-    ? 'portal'
-    : allowed && !allowed.includes(target.tab)
-      ? (allowed[0] as TabId)
-      : target.tab;
+  // El gating vive en lib/access.ts y está cubierto por tests/access.test.mjs.
+  const effectiveTab: TabId = resolveTab(target.tab, user?.role, myProfile?.screens);
 
   useEffect(() => {
     if (effectiveTab !== target.tab) onNavigate({ ...target, tab: effectiveTab });
