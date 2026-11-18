@@ -11,6 +11,25 @@ export const DEFAULT_SETTINGS: AppSettings = {
 export const fmtMoney = (v: number, currency = '$') =>
   `${currency}${(v ?? 0).toLocaleString('es', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 
+/** Lo que escribe el usuario → valor crudo (solo dígitos y un punto decimal). */
+export const parseMoneyInput = (raw: string): string => {
+  // Los puntos son separadores de miles; la coma es el separador decimal.
+  const onlyDigitsAndCommas = raw.replace(/[^\d,]/g, '');
+  const [intPart, ...rest] = onlyDigitsAndCommas.split(',');
+  const digits = intPart.replace(/^0+(?=\d)/, '');
+  const decimals = rest.join('').replace(/\D/g, '').slice(0, 2);
+  if (rest.length > 0 && decimals === '') return `${digits}.`;
+  return decimals ? `${digits}.${decimals}` : digits;
+};
+
+/** Valor crudo → texto con puntos de miles mientras se escribe (1500000 → "1.500.000"). */
+export const formatMoneyInput = (value: string): string => {
+  if (!value) return '';
+  const [intPart, decimals] = value.split('.');
+  const grouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return decimals === undefined ? grouped : `${grouped},${decimals}`;
+};
+
 export const fmtDate = (iso?: string | null) => {
   if (!iso) return '—';
   const d = new Date(iso.length <= 10 ? `${iso}T12:00:00` : iso);
@@ -38,6 +57,16 @@ export const daysBetween = (a: string, b: string) =>
 
 export const initials = (name: string) =>
   name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0]!.toUpperCase()).join('');
+
+/** Nombre libre → slug del método de pago: "Nequi / Daviplata" → "nequi_daviplata". */
+export const paymentMethodSlug = (name: string): string => {
+  const slug = name
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase().trim()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+  return slug || `metodo_${Date.now()}`;
+};
 
 export const waLink = (phone: string, text?: string) => {
   const clean = phone.replace(/[^\d]/g, '');

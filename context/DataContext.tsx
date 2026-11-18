@@ -3,12 +3,14 @@
 // ============================================================================
 import React, { createContext, useContext, useCallback, useEffect, useMemo, useState } from 'react';
 import {
-    AppSettings, AuditEvent, Client, CollectionActivity, CreditApplication, CreditApplicationStatus,
-    CustomRole, Installment, Loan, Payment, Profile, RestructureLoanInput, UserRole,
+    AppNotification, AppSettings, AuditEvent, CashSession, Client, CollectionActivity, CreditApplication,
+    CreditApplicationStatus, CustomRole, Installment, Loan, NotificationStatus, NotificationTemplate, Payment,
+    PaymentChannel, PaymentMethodOption, Profile, RestructureLoanInput, UserRole,
   } from '../types';
 
 import {
   DataAdapter, getAdapter, CreateLoanInput, PayInput, ActivityInput, NewClientInput, NewCreditApplicationInput,
+  NewNotificationInput, PaymentChannelInput,
 } from '../services/dataAdapter';
 import { buildDashboardStats, DashboardStatsLike } from '../lib/engine';
 
@@ -24,6 +26,11 @@ interface DataState {
   profiles: Profile[];
   roles: CustomRole[];
   applications: CreditApplication[];
+  paymentMethods: PaymentMethodOption[];
+  notificationTemplates: NotificationTemplate[];
+  notifications: AppNotification[];
+  cashSessions: CashSession[];
+  paymentChannels: PaymentChannel[];
   saveRole: (role: CustomRole) => Promise<void>;
   deleteRole: (roleId: string) => Promise<void>;
   settings: AppSettings;
@@ -41,9 +48,22 @@ interface DataState {
   updateSettings: (patch: Partial<AppSettings>) => Promise<AppSettings>;
   updateProfileRole: (userId: string, role: UserRole) => Promise<void>;
   toggleProfileActive: (userId: string, active: boolean) => Promise<void>;
+  savePaymentMethod: (input: { id?: string; name: string; active?: boolean }) => Promise<PaymentMethodOption>;
+  saveNotificationTemplate: (input: NotificationTemplate) => Promise<NotificationTemplate>;
+  createNotification: (input: NewNotificationInput) => Promise<AppNotification>;
+  setNotificationStatus: (id: string, status: NotificationStatus) => Promise<void>;
+  openCashSession: (openingAmount: number) => Promise<CashSession>;
+  closeCashSession: (id: string, countedAmount: number, notes?: string) => Promise<CashSession>;
+  savePaymentChannel: (input: PaymentChannelInput) => Promise<PaymentChannel>;
   createApplication: (input: NewCreditApplicationInput) => Promise<CreditApplication>;
-  updateApplicationStatus: (id: string, status: CreditApplicationStatus, reviewNotes?: string) => Promise<void>;
+  updateApplicationStatus: (
+    id: string,
+    status: CreditApplicationStatus,
+    reviewNotes?: string,
+    approvedAmount?: number | null,
+  ) => Promise<void>;
   linkClientToProfile: (userId: string, clientId: string | null) => Promise<void>;
+  importBackup: (data: Record<string, unknown>) => Promise<void>;
   refresh: () => Promise<void>;
 }
 
@@ -62,6 +82,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [roles, setRoles] = useState<CustomRole[]>([]);
   const [applications, setApplications] = useState<CreditApplication[]>([]);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethodOption[]>([]);
+  const [notificationTemplates, setNotificationTemplates] = useState<NotificationTemplate[]>([]);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [cashSessions, setCashSessions] = useState<CashSession[]>([]);
+  const [paymentChannels, setPaymentChannels] = useState<PaymentChannel[]>([]);
   const [settings, setSettings] = useState<AppSettings>({
     currency: '$', defaultInterestRate: 15, companyName: 'DineroYa',
   });
@@ -70,16 +95,24 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(true);
     setError(null);
     try {
-      const [c, l, i, p, a, ev, pr, s, apps] = await Promise.all([
+      const [c, l, i, p, a, ev, pr, s, apps, pm, tpl, notif, cash, chans] = await Promise.all([
         adapter.listClients(), adapter.listLoans(), adapter.listInstallments(),
         adapter.listPayments(), adapter.listActivities(), adapter.listAuditEvents(),
         adapter.listProfiles().catch(() => [] as Profile[]), adapter.getSettings(),
         adapter.listApplications().catch(() => [] as CreditApplication[]),
+        adapter.listPaymentMethods().catch(() => [] as PaymentMethodOption[]),
+        adapter.listNotificationTemplates().catch(() => [] as NotificationTemplate[]),
+        adapter.listNotifications().catch(() => [] as AppNotification[]),
+        adapter.listCashSessions().catch(() => [] as CashSession[]),
+        adapter.listPaymentChannels().catch(() => [] as PaymentChannel[]),
       ]);
       const rs = await adapter.listRoles().catch(() => [] as CustomRole[]);
       setClients(c); setLoans(l); setInstallments(i); setPayments(p);
       setActivities(a); setAuditEvents(ev); setProfiles(pr); setSettings(s); setRoles(rs);
       setApplications(apps);
+      setPaymentMethods(pm);
+      setNotificationTemplates(tpl); setNotifications(notif);
+      setCashSessions(cash); setPaymentChannels(chans);
     } catch (e: any) {
       setError(e?.message ?? 'Error cargando datos');
     } finally {
@@ -136,10 +169,59 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [adapter, wrap]);
   const toggleProfileActive = useCallback((userId: string, active: boolean) => wrap(() => adapter.toggleProfileActive(userId, active)), [adapter, wrap]);
   const createApplication = useCallback((input: NewCreditApplicationInput) => wrap(() => adapter.createApplication(input)), [adapter, wrap]);
-  const updateApplicationStatus = useCallback((id: string, status: CreditApplicationStatus, reviewNotes?: string) =>
-    wrap(() => adapter.updateApplicationStatus(id, status, reviewNotes)), [adapter, wrap]);
+  const updateApplicationStatus = useCallback(
+    (id: string, status: CreditApplicationStatus, reviewNotes?: string, approvedAmount?: number | null) =>
+      wrap(() => adapter.updateApplicationStatus(id, status, reviewNotes, approvedAmount)),
+    [adapter, wrap],
+  );
+  const saveNotificationTemplate = useCallback(async (input: NotificationTemplate) => {
+    const saved = await wrap(() => adapter.saveNotificationTemplate(input));
+    setNotificationTemplates(prev => [...prev.filter(t => t.id !== saved.id), saved]);
+    return saved;
+  }, [adapter, wrap]);
+
+  const createNotification = useCallback(async (input: NewNotificationInput) => {
+    const created = await wrap(() => adapter.createNotification(input));
+    setNotifications(prev => [created, ...prev]);
+    return created;
+  }, [adapter, wrap]);
+
+  const setNotificationStatus = useCallback(async (id: string, status: NotificationStatus) => {
+    await wrap(() => adapter.setNotificationStatus(id, status));
+    setNotifications(prev => prev.map(n => (n.id === id
+      ? { ...n, status, sentAt: status === 'sent' ? new Date().toISOString() : n.sentAt }
+      : n)));
+  }, [adapter, wrap]);
+
+  const openCashSession = useCallback(async (openingAmount: number) => {
+    const session = await wrap(() => adapter.openCashSession(openingAmount));
+    setCashSessions(prev => [session, ...prev]);
+    return session;
+  }, [adapter, wrap]);
+
+  const closeCashSession = useCallback(async (id: string, countedAmount: number, notes?: string) => {
+    const session = await wrap(() => adapter.closeCashSession(id, countedAmount, notes));
+    setCashSessions(prev => prev.map(s => (s.id === id ? session : s)));
+    return session;
+  }, [adapter, wrap]);
+
+  const savePaymentChannel = useCallback(async (input: PaymentChannelInput) => {
+    const saved = await wrap(() => adapter.savePaymentChannel(input));
+    setPaymentChannels(prev => [...prev.filter(c => c.id !== saved.id), saved].sort((a, b) => a.sortOrder - b.sortOrder));
+    return saved;
+  }, [adapter, wrap]);
+
+  const savePaymentMethod = useCallback(async (input: { id?: string; name: string; active?: boolean }) => {
+    const saved = await wrap(() => adapter.savePaymentMethod(input));
+    setPaymentMethods(prev => [...prev.filter(m => m.id !== saved.id), saved].sort((a, b) => a.sortOrder - b.sortOrder));
+    return saved;
+  }, [adapter, wrap]);
+
   const linkClientToProfile = useCallback((userId: string, clientId: string | null) =>
     wrap(() => adapter.linkClientToProfile(userId, clientId)), [adapter, wrap]);
+
+  const importBackup = useCallback((data: Record<string, unknown>) =>
+    wrap(() => adapter.importBackup(data)), [adapter, wrap]);
 
   // --- Estadísticas derivadas ---------------------------------------------------
 
@@ -151,11 +233,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   return (
     <DataContext.Provider value={{
       loading, error, clients, loans, installments, payments, activities,
-      auditEvents, profiles, roles, applications, settings, stats,
+      auditEvents, profiles, roles, applications, settings, stats, paymentMethods,
+      notificationTemplates, notifications, cashSessions, paymentChannels,
       createClient, updateClient, createLoan, cancelLoan, restructureLoan, assignLoan,
       registerPayment, voidPayment, logActivity, updateSettings,
       updateProfileRole, toggleProfileActive, createApplication, updateApplicationStatus,
-      linkClientToProfile, saveRole, deleteRole, refresh: load,
+      savePaymentMethod, saveNotificationTemplate, createNotification, setNotificationStatus,
+      openCashSession, closeCashSession, savePaymentChannel,
+      linkClientToProfile, importBackup, saveRole, deleteRole, refresh: load,
     }}>
       {children}
     </DataContext.Provider>

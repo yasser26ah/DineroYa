@@ -16,13 +16,23 @@
 | **Panel de base de datos (solo admin técnico)** | https://supabase.com/dashboard/project/crmnnoyvcvjhfquewofn |
 | **Hosting / deploys (solo admin técnico)** | Cloudflare Pages → proyecto `dineroya` |
 
-### Cuenta de administrador
+### Cuenta de administrador nube
 
 | Campo | Valor |
 |---|---|
 | **Email** | `admin@dineroya.app` |
 | **Contraseña** | `DineroYa2026!` |
 | **Rol** | Administrador (acceso total) |
+
+### Cuenta de administrador local
+
+| Campo | Valor |
+|---|---|
+| **Email** | `admin@dineroya.local` |
+| **Contraseña** | `Dineroya2026` |
+| **Rol** | Administrador (acceso total) |
+
+
 
 > 🔐 **Reglas de la contraseña admin:**
 > - No compartirla por WhatsApp ni correo. Comunicarla de persona a persona.

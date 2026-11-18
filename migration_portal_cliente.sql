@@ -35,6 +35,10 @@ CREATE TABLE IF NOT EXISTS credit_applications (
 );
 CREATE INDEX IF NOT EXISTS idx_applications_status ON credit_applications(status, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_applications_client ON credit_applications(client_id);
+CREATE INDEX IF NOT EXISTS idx_applications_client_day ON credit_applications(client_id, created_at DESC);
+
+-- Monto con el que finalmente se aprueba el crédito (puede diferir del solicitado).
+ALTER TABLE credit_applications ADD COLUMN IF NOT EXISTS approved_amount DECIMAL(15,2) CHECK (approved_amount > 0);
 
 ALTER TABLE credit_applications ENABLE ROW LEVEL SECURITY;
 
@@ -50,6 +54,58 @@ CREATE OR REPLACE FUNCTION fn_is_client() RETURNS BOOLEAN
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
   SELECT COALESCE((SELECT role::text = 'cliente' FROM profiles WHERE id = auth.uid()), FALSE);
 $$;
+
+-- ---------------------------------------------------------------------------
+-- 3b. Límites anti-saturación de solicitudes
+--   · máximo 3 solicitudes por día hechas por el propio cliente
+--   · se rechaza de inmediato una solicitud repetida (mismo cliente y monto)
+--     mientras la anterior siga pendiente
+-- ---------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION fn_check_application_limits()
+RETURNS TRIGGER AS $$
+DECLARE
+  v_client UUID := NEW.client_id;
+  v_today INTEGER;
+  v_limit CONSTANT INTEGER := 3;
+BEGIN
+  -- Si el portal no trae la ficha vinculada, se intenta identificar por email.
+  IF v_client IS NULL AND NEW.email IS NOT NULL THEN
+    SELECT c.id INTO v_client FROM clients c
+     WHERE lower(c.email) = lower(NEW.email) LIMIT 1;
+    NEW.client_id := v_client;
+  END IF;
+
+  -- Repetida: misma persona, mismo monto y ya tiene una pendiente.
+  IF EXISTS (
+    SELECT 1 FROM credit_applications a
+     WHERE a.status = 'pending'
+       AND a.requested_amount = NEW.requested_amount
+       AND ((v_client IS NOT NULL AND a.client_id = v_client)
+            OR (v_client IS NULL AND NEW.email IS NOT NULL AND lower(a.email) = lower(NEW.email)))
+  ) THEN
+    RAISE EXCEPTION 'Ya tienes una solicitud pendiente por ese mismo monto. Espera la respuesta antes de enviar otra.';
+  END IF;
+
+  -- Tope diario: solo para solicitudes hechas por el propio cliente.
+  IF (SELECT fn_is_client()) THEN
+    SELECT COUNT(*) INTO v_today FROM credit_applications a
+     WHERE (a.created_at AT TIME ZONE 'America/Bogota')::date = (NOW() AT TIME ZONE 'America/Bogota')::date
+       AND a.status <> 'cancelled'
+       AND ((v_client IS NOT NULL AND a.client_id = v_client)
+            OR (v_client IS NULL AND NEW.email IS NOT NULL AND lower(a.email) = lower(NEW.email)));
+    IF v_today >= v_limit THEN
+      RAISE EXCEPTION 'Límite alcanzado: solo puedes enviar % solicitudes por día. Intenta mañana.', v_limit;
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+DROP TRIGGER IF EXISTS trg_application_limits ON credit_applications;
+CREATE TRIGGER trg_application_limits
+BEFORE INSERT ON credit_applications
+FOR EACH ROW EXECUTE FUNCTION fn_check_application_limits();
 
 -- Un cliente solo puede ver los préstamos de su propia ficha.
 CREATE OR REPLACE FUNCTION fn_can_see_loan(p_loan UUID) RETURNS BOOLEAN AS $$
@@ -178,8 +234,8 @@ BEGIN
     RETURNING id INTO v_client;
   END IF;
 
-  INSERT INTO public.profiles (id, full_name, role, client_id)
-  VALUES (NEW.id, v_name, v_role::user_role, v_client);
+  INSERT INTO public.profiles (id, full_name, role, role_id, client_id)
+  VALUES (NEW.id, v_name, v_role::user_role, v_role, v_client);
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
@@ -284,3 +340,164 @@ GRANT SELECT, INSERT, UPDATE ON credit_applications TO authenticated;
 -- ============================================================================
 -- Fin de la migración
 -- ============================================================================
+
+-- ============================================================================
+-- Recaudos: catálogo editable de métodos de pago + pantalla de recaudos
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS payment_methods (
+  id TEXT PRIMARY KEY,
+  name VARCHAR(60) NOT NULL,
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+INSERT INTO payment_methods (id, name, sort_order) VALUES
+  ('cash', 'Efectivo', 1),
+  ('transfer', 'Transferencia', 2),
+  ('card', 'Tarjeta', 3),
+  ('other', 'Otro', 4)
+ON CONFLICT (id) DO NOTHING;
+
+ALTER TABLE payment_methods ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "payment_methods_read" ON payment_methods;
+CREATE POLICY "payment_methods_read" ON payment_methods FOR SELECT TO authenticated USING (TRUE);
+
+DROP POLICY IF EXISTS "payment_methods_write" ON payment_methods;
+CREATE POLICY "payment_methods_write" ON payment_methods FOR ALL TO authenticated
+  USING (fn_has_perm('editSettings')) WITH CHECK (fn_has_perm('editSettings'));
+
+GRANT SELECT, INSERT, UPDATE ON payment_methods TO authenticated;
+
+-- Pantalla "Recaudos" para el equipo (el portal del cliente no la ve).
+UPDATE roles
+  SET screens = array_append(screens, 'payments')
+  WHERE id IN ('admin', 'gerente', 'cobrador') AND NOT ('payments' = ANY(screens));
+
+-- Módulos operativos: notificaciones, caja, canales de pago y reportes
+
+-- ----------------------------------------------------------------------------
+-- 1. Centro de notificaciones y automatización
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS notification_templates (
+  id TEXT PRIMARY KEY,
+  name VARCHAR(80) NOT NULL,
+  channel VARCHAR(10) NOT NULL DEFAULT 'whatsapp' CHECK (channel IN ('whatsapp','email')),
+  subject VARCHAR(160),
+  body TEXT NOT NULL,
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+INSERT INTO notification_templates (id, name, channel, subject, body) VALUES
+  ('recordatorio_cuota', 'Recordatorio de cuota por vencer', 'whatsapp', NULL,
+   'Hola {{cliente}}, te recordamos que tu cuota #{{cuota}} por {{monto}} vence el {{fecha}}. Puedes pagar en efectivo, por transferencia o por los canales de pago de {{empresa}}. ¡Gracias!'),
+  ('cuota_vencida', 'Cuota vencida', 'whatsapp', NULL,
+   'Hola {{cliente}}, tu cuota #{{cuota}} por {{monto}} venció el {{fecha}} y sigue pendiente. Tu saldo total es {{saldo}}. Escríbenos para acordar el pago con {{empresa}}.'),
+  ('promesa_incumplida', 'Promesa de pago incumplida', 'whatsapp', NULL,
+   'Hola {{cliente}}, no registramos el pago que acordaste para el {{fecha}}. Tu saldo pendiente es {{saldo}}. ¿Podemos acordar una nueva fecha? — {{empresa}}.'),
+  ('pago_recibido', 'Confirmación de pago', 'whatsapp', NULL,
+   'Hola {{cliente}}, recibimos tu pago por {{monto}}. Tu nuevo saldo es {{saldo}}. ¡Gracias por cumplir! — {{empresa}}.'),
+  ('recordatorio_correo', 'Recordatorio de cuota (correo)', 'email', 'Recordatorio de tu cuota en {{empresa}}',
+   'Hola {{cliente}}:' || chr(10) || chr(10) ||
+   'Tu cuota #{{cuota}} por {{monto}} vence el {{fecha}}. Tu saldo pendiente es {{saldo}}.' || chr(10) || chr(10) ||
+   'Puedes pagar en efectivo, por transferencia o por nuestros canales de pago.' || chr(10) || chr(10) || '{{empresa}}')
+ON CONFLICT (id) DO NOTHING;
+
+CREATE TABLE IF NOT EXISTS notifications (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  client_id UUID REFERENCES clients(id) ON DELETE CASCADE,
+  loan_id UUID REFERENCES loans(id) ON DELETE SET NULL,
+  channel VARCHAR(10) NOT NULL DEFAULT 'whatsapp' CHECK (channel IN ('whatsapp','email')),
+  template_id TEXT,
+  title VARCHAR(160) NOT NULL,
+  body TEXT NOT NULL,
+  status VARCHAR(12) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','sent','cancelled')),
+  created_by UUID REFERENCES auth.users(id),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  sent_at TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS idx_notifications_status ON notifications(status, created_at DESC);
+
+-- ----------------------------------------------------------------------------
+-- 2. Caja y tesorería (cierre / arqueo)
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS cash_sessions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  opened_by UUID REFERENCES auth.users(id),
+  opened_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  opening_amount DECIMAL(15,2) NOT NULL DEFAULT 0 CHECK (opening_amount >= 0),
+  closed_at TIMESTAMPTZ,
+  counted_amount DECIMAL(15,2),
+  expected_amount DECIMAL(15,2),
+  difference DECIMAL(15,2),
+  notes TEXT,
+  status VARCHAR(10) NOT NULL DEFAULT 'open' CHECK (status IN ('open','closed'))
+);
+
+-- Solo puede haber una caja abierta a la vez.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_cash_one_open ON cash_sessions(status) WHERE status = 'open';
+
+-- ----------------------------------------------------------------------------
+-- 3. Canales de pago y pasarelas
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS payment_channels (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name VARCHAR(80) NOT NULL,
+  kind VARCHAR(20) NOT NULL DEFAULT 'bank_account'
+    CHECK (kind IN ('bank_account','wallet','card_gateway','cash_office')),
+  account_info VARCHAR(200),
+  instructions TEXT,
+  link TEXT,
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+INSERT INTO payment_channels (name, kind, account_info, instructions, sort_order)
+SELECT 'Efectivo en oficina', 'cash_office', NULL, 'Acércate a la oficina en horario laboral.', 1
+WHERE NOT EXISTS (SELECT 1 FROM payment_channels);
+
+INSERT INTO payment_channels (name, kind, account_info, instructions, sort_order)
+SELECT 'Transferencia bancaria', 'bank_account', NULL, 'Envía el comprobante por WhatsApp.', 2
+WHERE (SELECT count(*) FROM payment_channels) = 1;
+
+-- ----------------------------------------------------------------------------
+-- 4. Seguridad (RLS) y permisos
+-- ----------------------------------------------------------------------------
+ALTER TABLE notification_templates ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE cash_sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE payment_channels ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "notification_templates_staff" ON notification_templates;
+CREATE POLICY "notification_templates_staff" ON notification_templates FOR ALL TO authenticated
+  USING (NOT (SELECT fn_is_client())) WITH CHECK (NOT (SELECT fn_is_client()));
+
+DROP POLICY IF EXISTS "notifications_staff" ON notifications;
+CREATE POLICY "notifications_staff" ON notifications FOR ALL TO authenticated
+  USING (NOT (SELECT fn_is_client())) WITH CHECK (NOT (SELECT fn_is_client()));
+
+DROP POLICY IF EXISTS "cash_sessions_staff" ON cash_sessions;
+CREATE POLICY "cash_sessions_staff" ON cash_sessions FOR ALL TO authenticated
+  USING (NOT (SELECT fn_is_client())) WITH CHECK (NOT (SELECT fn_is_client()));
+
+-- Los canales sí los ve el cliente en el portal; solo el admin los edita.
+DROP POLICY IF EXISTS "payment_channels_read" ON payment_channels;
+CREATE POLICY "payment_channels_read" ON payment_channels FOR SELECT TO authenticated USING (TRUE);
+DROP POLICY IF EXISTS "payment_channels_write" ON payment_channels;
+CREATE POLICY "payment_channels_write" ON payment_channels FOR ALL TO authenticated
+  USING (fn_has_perm('editSettings')) WITH CHECK (fn_has_perm('editSettings'));
+
+GRANT SELECT, INSERT, UPDATE ON notification_templates, notifications, cash_sessions, payment_channels TO authenticated;
+
+-- Pantallas nuevas por rol.
+UPDATE roles SET screens = array_append(screens, 'notifications')
+  WHERE id IN ('admin','gerente','cobrador') AND NOT ('notifications' = ANY(screens));
+UPDATE roles SET screens = array_append(screens, 'cash')
+  WHERE id IN ('admin','gerente','cobrador') AND NOT ('cash' = ANY(screens));
+UPDATE roles SET screens = array_append(screens, 'channels')
+  WHERE id IN ('admin','gerente') AND NOT ('channels' = ANY(screens));
+UPDATE roles SET screens = array_append(screens, 'reports')
+  WHERE id IN ('admin','gerente') AND NOT ('reports' = ANY(screens));

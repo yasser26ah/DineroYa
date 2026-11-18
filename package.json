@@ -6,9 +6,20 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "db:start": "supabase start",
+    "db:stop": "supabase stop",
+    "db:status": "supabase status",
+    "local:start": "node scripts/local.mjs start",
+    "local:stop": "node scripts/local.mjs stop",
+    "db:sync": "node scripts/sync-schema.mjs",
+    "db:reset": "npm run db:sync && supabase db reset",
+    "build:sites": "vite build --mode sites --outDir freebuff-sites-build/assets --emptyOutDir && node scripts/build-worker.mjs",
+    "sites:dev": "wrangler dev --config wrangler.sites.jsonc --port 8787",
+    "sites:types": "tsc --noEmit"
   },
   "dependencies": {
+    "@freebuff/auth": "^0.1.0",
     "@google/genai": "^1.40.0",
     "@supabase/supabase-js": "^2.117.1",
     "lucide-react": "^0.563.0",
@@ -20,8 +31,11 @@
     "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "esbuild": "^0.28.2",
+    "supabase": "^3.0.0",
     "tailwindcss": "^4.3.3",
     "typescript": "~5.8.2",
-    "vite": "^6.2.0"
+    "vite": "^6.2.0",
+    "wrangler": "^4.160.1"
   }
 }

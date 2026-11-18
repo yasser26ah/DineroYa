@@ -10,10 +10,10 @@ import {
 import { ClientFormModal, CreateLoanModal } from '../components/modals';
 import { loanOutstanding, clientMoraAmount } from '../lib/engine';
 import { fmtDate, fmtMoney, waLink } from '../lib/format';
-import { Client, LOAN_STATUS_LABELS, PAYMENT_METHOD_LABELS } from '../types';
+import { Client, LOAN_STATUS_LABELS, paymentMethodLabel } from '../types';
 
 export const ClientsPage: React.FC = () => {
-  const { clients, loans, installments, payments, settings } = useData();
+  const { clients, loans, installments, payments, settings, paymentMethods } = useData();
   const moraOf = (clientId: string) => clientMoraAmount(clientId, loans, installments, settings.moraRate ?? 0);
   const cur = settings.currency;
   const [search, setSearch] = useState('');
@@ -168,7 +168,7 @@ export const ClientsPage: React.FC = () => {
                     .slice(0, 3)
                     .map(p => (
                       <div key={p.id} className="flex justify-between text-xs font-bold text-slate-600 py-1">
-                        <span>{fmtDate(p.paymentDate)} · {PAYMENT_METHOD_LABELS[p.method]}</span>
+                        <span>{fmtDate(p.paymentDate)} · {paymentMethodLabel(p.method, paymentMethods)}</span>
                         <span className="text-emerald-600 font-black">{fmtMoney(p.amount, cur)}</span>
                       </div>
                     ))}

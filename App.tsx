@@ -18,6 +18,11 @@ import { TeamPage } from './pages/TeamPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { ClientPortalPage } from './pages/ClientPortalPage';
 import { ApplicationsPage } from './pages/ApplicationsPage';
+import { PaymentsPage } from './pages/PaymentsPage';
+import { CashPage } from './pages/CashPage';
+import { NotificationsPage } from './pages/NotificationsPage';
+import { ChannelsPage } from './pages/ChannelsPage';
+import { ReportsPage } from './pages/ReportsPage';
 import { TermsPage } from './pages/TermsPage';
 import { PrivacyPage } from './pages/PrivacyPage';
 
@@ -143,6 +148,11 @@ const AppBody: React.FC<{ activeTab: string; onNavigate: (t: string) => void; is
       case 'applications': return <ApplicationsPage />;
       case 'collections': return <CollectionsPage />;
       case 'loans': return <LoansPage />;
+      case 'payments': return <PaymentsPage />;
+      case 'cash': return <CashPage />;
+      case 'notifications': return <NotificationsPage />;
+      case 'channels': return <ChannelsPage />;
+      case 'reports': return <ReportsPage />;
       case 'clients': return <ClientsPage />;
       case 'audit': return <AuditPage />;
       case 'team': return <TeamPage />;

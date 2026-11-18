@@ -3,12 +3,13 @@
 // ============================================================================
 import React, { useMemo, useState } from 'react';
 import {
-  FileText, CheckCircle2, XCircle, Clock, Phone, Mail, MapPin, AlertTriangle,
+  FileText, CheckCircle2, XCircle, Clock, Phone, Mail, MapPin, AlertTriangle, Banknote,
 } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import {
   Btn, Card, EmptyState, Field, Modal, PageHeader, SearchBar, StatusBadge, inputCls,
 } from '../components/ui';
+import { CreateLoanModal } from '../components/modals';
 import { fmtDate, fmtDateTime, fmtMoney } from '../lib/format';
 import {
   CREDIT_APPLICATION_STATUS_LABELS, CreditApplication, CreditApplicationStatus,
@@ -34,6 +35,8 @@ export const ApplicationsPage: React.FC = () => {
   const [selected, setSelected] = useState<CreditApplication | null>(null);
   const [decision, setDecision] = useState<'approved' | 'rejected' | null>(null);
   const [notes, setNotes] = useState('');
+  const [approvedAmount, setApprovedAmount] = useState('');
+  const [loanFor, setLoanFor] = useState<CreditApplication | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const cur = settings.currency;
@@ -55,19 +58,33 @@ export const ApplicationsPage: React.FC = () => {
   const clientName = (a: CreditApplication) =>
     a.clientId ? clients.find(c => c.id === a.clientId)?.name : undefined;
 
+  const clientOf = (a: CreditApplication) =>
+    a.clientId ? clients.find(c => c.id === a.clientId) : undefined;
+
   const openDecision = (app: CreditApplication, kind: 'approved' | 'rejected') => {
     setSelected(app);
     setDecision(kind);
     setNotes('');
+    setApprovedAmount(kind === 'approved' ? String(app.approvedAmount ?? app.requestedAmount) : '');
     setError(null);
   };
 
   const submitDecision = async () => {
     if (!selected || !decision) return;
+    const amount = Number(approvedAmount);
+    if (decision === 'approved' && (!amount || amount <= 0)) {
+      setError('Ingresa el monto con el que se hará el nuevo préstamo.');
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
-      await updateApplicationStatus(selected.id, decision, notes.trim() || undefined);
+      await updateApplicationStatus(
+        selected.id,
+        decision,
+        notes.trim() || undefined,
+        decision === 'approved' ? amount : null,
+      );
       setSelected(null);
       setDecision(null);
     } catch (err: any) {
@@ -116,6 +133,11 @@ export const ApplicationsPage: React.FC = () => {
               <div className="flex items-start justify-between gap-4 mb-4">
                 <div>
                   <p className="text-xl font-black text-slate-900">{fmtMoney(app.requestedAmount, cur)}</p>
+                  {app.status === 'approved' && app.approvedAmount && (
+                    <p className="text-[11px] font-black text-emerald-600 uppercase tracking-widest mt-0.5">
+                      Aprobado por {fmtMoney(app.approvedAmount, cur)}
+                    </p>
+                  )}
                   <p className="text-xs font-bold text-slate-500">{app.applicantName}</p>
                   {clientName(app) && (
                     <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest mt-1">
@@ -157,6 +179,14 @@ export const ApplicationsPage: React.FC = () => {
                   </Btn>
                 </div>
               )}
+
+              {app.status === 'approved' && clientOf(app) && (
+                <div className="flex gap-2 pt-3 border-t border-slate-100">
+                  <Btn onClick={() => setLoanFor(app)} className="flex-1 flex items-center justify-center gap-1.5">
+                    <Banknote className="w-4 h-4" /> Crear préstamo
+                  </Btn>
+                </div>
+              )}
             </Card>
           ))}
         </div>
@@ -176,6 +206,23 @@ export const ApplicationsPage: React.FC = () => {
                 ? <><CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" /> Al aprobar, el cliente verá la respuesta en su portal. Luego crea el préstamo desde la sección Préstamos.</>
                 : <><AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" /> El cliente verá el motivo del rechazo en su portal.</>}
             </div>
+            {decision === 'approved' && (
+              <Field label={`Monto para el nuevo préstamo (${cur})`}>
+                <input
+                  type="number"
+                  min="1"
+                  step="0.01"
+                  required
+                  value={approvedAmount}
+                  onChange={e => setApprovedAmount(e.target.value)}
+                  className={inputCls}
+                />
+                <p className="text-[11px] text-slate-400 font-bold mt-2 leading-relaxed">
+                  Solicitó {fmtMoney(selected.requestedAmount, cur)}. Puedes aprobar un monto distinto: se guarda en la
+                  solicitud y se usa al crear el préstamo.
+                </p>
+              </Field>
+            )}
             <Field label={decision === 'approved' ? 'Condiciones o nota para el cliente (opcional)' : 'Motivo del rechazo (opcional)'}>
               <textarea
                 rows={3}
@@ -199,6 +246,14 @@ export const ApplicationsPage: React.FC = () => {
             </div>
           </div>
         </Modal>
+      )}
+
+      {loanFor && clientOf(loanFor) && (
+        <CreateLoanModal
+          preselectedClient={clientOf(loanFor)!}
+          defaultAmount={loanFor.approvedAmount ?? loanFor.requestedAmount}
+          onClose={() => setLoanFor(null)}
+        />
       )}
     </div>
   );

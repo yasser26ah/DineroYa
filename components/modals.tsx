@@ -2,7 +2,7 @@
 // DineroYa — Modales de operación (cliente, préstamo, pago, gestión, WhatsApp)
 // ============================================================================
 import React, { useMemo, useState } from 'react';
-import { Send, Copy, AlertTriangle, Banknote } from 'lucide-react';
+import { Send, Copy, AlertTriangle, Banknote, UserPlus } from 'lucide-react';
 import {
   ACTIVITY_RESULT_LABELS, ACTIVITY_TYPE_LABELS, ActivityResult, ActivityType,
   Client, FREQUENCY_LABELS, Installment, Loan, LoanFrequency, PAYMENT_METHOD_LABELS, Payment, PaymentMethod,
@@ -12,7 +12,7 @@ import { useAuth } from '../context/AuthContext';
 import { fmtDate, fmtMoney, todayISO, waLink } from '../lib/format';
 import { generateSchedule, restructureSchedule, riskSuggestedRate, splitInstallmentsForRestructure, ScheduleRow } from '../lib/engine';
 import { generatePaymentMessage } from '../services/gemini';
-import { Btn, Field, inputCls, Modal } from './ui';
+import { Btn, Field, inputCls, Modal, MoneyInput } from './ui';
 
 // ---------------------------------------------------------------------------
 // Cliente: alta / edición
@@ -87,13 +87,15 @@ export const ClientFormModal: React.FC<{ client?: Client; onClose: () => void }>
 export const CreateLoanModal: React.FC<{
   preselectedClient?: Client | null;
   defaultClientId?: string;
+  /** Monto con el que se abre el formulario (p. ej. el aprobado en una solicitud). */
+  defaultAmount?: number;
   onClose: () => void;
   onCreated?: (loan: Loan) => void;
-}> = ({ preselectedClient, defaultClientId, onClose, onCreated }) => {
-  const { clients, profiles, settings, createLoan } = useData();
+}> = ({ preselectedClient, defaultClientId, defaultAmount, onClose, onCreated }) => {
+  const { clients, profiles, settings, createLoan, createClient } = useData();
   const { user } = useAuth();
   const [clientId, setClientId] = useState(preselectedClient?.id ?? defaultClientId ?? '');
-  const [principal, setPrincipal] = useState('');
+  const [principal, setPrincipal] = useState(defaultAmount && defaultAmount > 0 ? String(defaultAmount) : '');
   const [rate, setRate] = useState(String(settings.defaultInterestRate));
   const [count, setCount] = useState('4');
   const [frequency, setFrequency] = useState<LoanFrequency>('monthly');
@@ -105,7 +107,41 @@ export const CreateLoanModal: React.FC<{
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Alta rápida de cliente sin salir del formulario del préstamo.
+  const [showNewClient, setShowNewClient] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newPhone, setNewPhone] = useState('');
+  const [newDocument, setNewDocument] = useState('');
+  const [newClientBusy, setNewClientBusy] = useState(false);
+
   const client = clients.find(c => c.id === clientId);
+
+  // Cobrar es trabajo del equipo: los perfiles del portal (rol 'cliente') no son cobradores.
+  const staff = profiles.filter(p => p.active && p.role !== 'cliente');
+
+  const createClientInline = async () => {
+    if (!newName.trim() || !newPhone.trim()) {
+      setError('Para el cliente nuevo ingresa al menos el nombre y el WhatsApp.');
+      return;
+    }
+    setNewClientBusy(true);
+    setError(null);
+    try {
+      const created = await createClient({
+        name: newName.trim(),
+        phone: newPhone.trim(),
+        document: newDocument.trim() || undefined,
+      });
+      setClientId(created.id);
+      if (principal) setRate(String(riskSuggestedRate(created.riskScore, settings.defaultInterestRate)));
+      setShowNewClient(false);
+      setNewName(''); setNewPhone(''); setNewDocument('');
+    } catch (err: any) {
+      setError(err.message ?? 'No se pudo crear el cliente.');
+    } finally {
+      setNewClientBusy(false);
+    }
+  };
 
   // Al elegir cliente se sugiere tasa según su riesgo
   const onClientChange = (id: string) => {
@@ -126,11 +162,13 @@ export const CreateLoanModal: React.FC<{
     e.preventDefault();
     setError(null);
     if (!clientId) { setError('Selecciona un cliente'); return; }
+    const principalValue = Number(principal);
+    if (!principalValue || principalValue <= 0) { setError('Ingresa un monto válido'); return; }
     setBusy(true);
     try {
       const loan = await createLoan({
         clientId,
-        principal: Number(principal),
+        principal: principalValue,
         interestRate: Number(rate),
         installmentsCount: Number(count),
         frequency,
@@ -157,11 +195,34 @@ export const CreateLoanModal: React.FC<{
                 <option key={c.id} value={c.id}>{c.name} — riesgo {c.riskScore}</option>
               ))}
             </select>
+            <button
+              type="button"
+              onClick={() => { setShowNewClient(v => !v); setError(null); }}
+              className="self-start text-[11px] font-black text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-xl uppercase tracking-widest hover:bg-indigo-100"
+            >
+              {showNewClient ? 'Cancelar cliente nuevo' : '+ Cliente nuevo'}
+            </button>
           </Field>
           <Field label={`Monto (${settings.currency})`}>
-            <input type="number" min="1" step="0.01" required value={principal} onChange={e => setPrincipal(e.target.value)} className={inputCls} />
+            <MoneyInput value={principal} onChange={setPrincipal} required />
           </Field>
         </div>
+        {showNewClient && (
+          <div className="bg-slate-50 rounded-3xl p-5 border border-slate-100 flex flex-col gap-4">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Cliente nuevo</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <input value={newName} onChange={e => setNewName(e.target.value)} className={inputCls} placeholder="Nombre completo" />
+              <input value={newPhone} onChange={e => setNewPhone(e.target.value)} className={inputCls} placeholder="WhatsApp" />
+              <input value={newDocument} onChange={e => setNewDocument(e.target.value)} className={inputCls} placeholder="Documento (opcional)" />
+            </div>
+            <div className="flex gap-3">
+              <Btn onClick={createClientInline} disabled={newClientBusy} className="flex items-center justify-center gap-2">
+                <UserPlus className="w-4 h-4" /> {newClientBusy ? 'Creando...' : 'Crear y seleccionar'}
+              </Btn>
+              <Btn variant="secondary" onClick={() => setShowNewClient(false)}>Cerrar</Btn>
+            </div>
+          </div>
+        )}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
           <Field label="Interés total %">
             <input type="number" min="0" step="0.1" required value={rate} onChange={e => setRate(e.target.value)} className={inputCls} />
@@ -178,11 +239,11 @@ export const CreateLoanModal: React.FC<{
             <input type="date" required value={firstDue} onChange={e => setFirstDue(e.target.value)} className={inputCls} />
           </Field>
         </div>
-        {profiles.length > 1 && (
+        {staff.length > 1 && (
           <Field label="Cobrador responsable">
             <select value={assignedTo} onChange={e => setAssignedTo(e.target.value)} className={inputCls}>
               <option value="">— Asignación automática (yo) —</option>
-              {profiles.filter(p => p.active).map(p => (
+              {staff.map(p => (
                 <option key={p.id} value={p.id}>{p.fullName} ({p.role})</option>
               ))}
             </select>
@@ -276,9 +337,15 @@ export const PaymentModal: React.FC<{
   client?: Client;
   onClose: () => void;
 }> = ({ loan, installments, client, onClose }) => {
-  const { registerPayment, settings } = useData();
+  const { registerPayment, settings, paymentMethods } = useData();
+  const methodOptions = useMemo(() => {
+    const active = paymentMethods.filter(m => m.active);
+    return active.length
+      ? active.map(m => ({ id: m.id, name: m.name }))
+      : Object.entries(PAYMENT_METHOD_LABELS).map(([id, name]) => ({ id, name }));
+  }, [paymentMethods]);
   const [amount, setAmount] = useState('');
-  const [method, setMethod] = useState<PaymentMethod>('cash');
+  const [method, setMethod] = useState<PaymentMethod>(methodOptions[0]?.id ?? 'cash');
   const [date, setDate] = useState(todayISO());
   const [notes, setNotes] = useState('');
   const [busy, setBusy] = useState(false);
@@ -384,7 +451,7 @@ export const PaymentModal: React.FC<{
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <Field label="Método">
             <select value={method} onChange={e => setMethod(e.target.value as PaymentMethod)} className={inputCls}>
-              {Object.entries(PAYMENT_METHOD_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              {methodOptions.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
             </select>
           </Field>
           <Field label="Fecha del pago">

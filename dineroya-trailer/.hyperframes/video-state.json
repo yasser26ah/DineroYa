@@ -1,0 +1,682 @@
+{
+  "version": 1,
+  "historyId": "09e474f0-79c0-42c1-bf17-8e6abce7520f",
+  "currentRevision": "4ed12845-4380-4159-91a3-25e6d388de37",
+  "pendingChanges": false,
+  "files": {
+    "AGENTS.md": {
+      "hash": "268ff46777938da818baa92a718571785e9acf2cef2d3ffbacbb93483dcba37a",
+      "content": "C:\\Users\\yasse\\.cache\\hyperframes\\history\\09e474f0-79c0-42c1-bf17-8e6abce7520f\\blobs\\26\\268ff46777938da818baa92a718571785e9acf2cef2d3ffbacbb93483dcba37a"
+    },
+    "CLAUDE.md": {
+      "hash": "268ff46777938da818baa92a718571785e9acf2cef2d3ffbacbb93483dcba37a",
+      "content": "C:\\Users\\yasse\\.cache\\hyperframes\\history\\09e474f0-79c0-42c1-bf17-8e6abce7520f\\blobs\\26\\268ff46777938da818baa92a718571785e9acf2cef2d3ffbacbb93483dcba37a"
+    },
+    "audio/make-track.mjs": {
+      "hash": "df92005ba0e9c4f586c19ecf9602001bbd1e09fe3066efd22143b02b4993559d",
+      "content": "C:\\Users\\yasse\\.cache\\hyperframes\\history\\09e474f0-79c0-42c1-bf17-8e6abce7520f\\blobs\\df\\df92005ba0e9c4f586c19ecf9602001bbd1e09fe3066efd22143b02b4993559d"
+    },
+    "hyperframes.json": {
+      "hash": "53dbce1e19aa713cbb12ee0bc4d206143b45ab15e6ffbfcaa8f69572d4d24d50",
+      "content": "C:\\Users\\yasse\\.cache\\hyperframes\\history\\09e474f0-79c0-42c1-bf17-8e6abce7520f\\blobs\\53\\53dbce1e19aa713cbb12ee0bc4d206143b45ab15e6ffbfcaa8f69572d4d24d50"
+    },
+    "index.html": {
+      "hash": "ceac4064aa325f6f8027511972ad0d445ed8e0212bd90011e7867f384a43bb0d",
+      "content": "C:\\Users\\yasse\\.cache\\hyperframes\\history\\09e474f0-79c0-42c1-bf17-8e6abce7520f\\blobs\\ce\\ceac4064aa325f6f8027511972ad0d445ed8e0212bd90011e7867f384a43bb0d"
+    },
+    "meta.json": {
+      "hash": "a80c95c913bab3de540322ea8d9572cda6a99009812eb5eb4e773855ac79d8ce",
+      "content": "C:\\Users\\yasse\\.cache\\hyperframes\\history\\09e474f0-79c0-42c1-bf17-8e6abce7520f\\blobs\\a8\\a80c95c913bab3de540322ea8d9572cda6a99009812eb5eb4e773855ac79d8ce"
+    },
+    "package-lock.json": {
+      "hash": "773e91b6399fced1ccfba5572712f06cf4b2f035da03da06892e1dcbda920b2e",
+      "content": "C:\\Users\\yasse\\.cache\\hyperframes\\history\\09e474f0-79c0-42c1-bf17-8e6abce7520f\\blobs\\77\\773e91b6399fced1ccfba5572712f06cf4b2f035da03da06892e1dcbda920b2e"
+    },
+    "package.json": {
+      "hash": "2a7b512e850bb3fc6933c6171dee85b22d7fe656ae65728d5abf9226a68d08e2",
+      "content": "C:\\Users\\yasse\\.cache\\hyperframes\\history\\09e474f0-79c0-42c1-bf17-8e6abce7520f\\blobs\\2a\\2a7b512e850bb3fc6933c6171dee85b22d7fe656ae65728d5abf9226a68d08e2"
+    },
+    "assets/track.wav": {
+      "hash": "d8ed7e1b5e19e9d806ef43a3d5103f2321e69462636f41c09dbd4e0b195a7cab",
+      "content": "C:\\Users\\yasse\\.cache\\hyperframes\\history\\09e474f0-79c0-42c1-bf17-8e6abce7520f\\blobs\\d8\\d8ed7e1b5e19e9d806ef43a3d5103f2321e69462636f41c09dbd4e0b195a7cab"
+    },
+    "render.log": {
+      "hash": "3d11af022e8bf3469e0f760752511e3c6cb5b531a6d05146e8b94de5ce1c5a9c",
+      "content": "C:\\Users\\yasse\\.cache\\hyperframes\\history\\09e474f0-79c0-42c1-bf17-8e6abce7520f\\blobs\\3d\\3d11af022e8bf3469e0f760752511e3c6cb5b531a6d05146e8b94de5ce1c5a9c"
+    }
+  },
+  "revisions": {
+    "0eacd88c-7d2b-43a9-808f-5fbbdffc43f3": {
+      "actor": {
+        "kind": "outside",
+        "name": "Outside"
+      },
+      "label": "Changed outside the app",
+      "startedAt": 1794463136858,
+      "endedAt": 1794463136884,
+      "files": {
+        "index.html": {
+          "before": "C:\\Users\\yasse\\.cache\\hyperframes\\history\\09e474f0-79c0-42c1-bf17-8e6abce7520f\\blobs\\2c\\2cf1dca2ac91cea84f20e497dd9abde15e72f58811120a12aee6e5d0c8e1250d",
+          "after": "C:\\Users\\yasse\\.cache\\hyperframes\\history\\09e474f0-79c0-42c1-bf17-8e6abce7520f\\blobs\\c6\\c68fd2401acb7c509bffc970b2e2a2fcde549522eb6689d6cf45d76db1252ac5"
+        },
+        "package-lock.json": {
+          "before": "C:\\Users\\yasse\\.cache\\hyperframes\\history\\09e474f0-79c0-42c1-bf17-8e6abce7520f\\blobs\\79\\790f79f60ab2ba3357cb1bb30f028e3c1da7f6e1246dfb2f38f2d1ae5afecc13",
+          "after": "C:\\Users\\yasse\\.cache\\hyperframes\\history\\09e474f0-79c0-42c1-bf17-8e6abce7520f\\blobs\\77\\773e91b6399fced1ccfba5572712f06cf4b2f035da03da06892e1dcbda920b2e"
+        },
+        "package.json": {
+          "before": "C:\\Users\\yasse\\.cache\\hyperframes\\history\\09e474f0-79c0-42c1-bf17-8e6abce7520f\\blobs\\d8\\d8217fd712a77ed2438b2e562eddf4ba0e6b1415169aa0eb7574ccd51a1406c0",
+          "after": "C:\\Users\\yasse\\.cache\\hyperframes\\history\\09e474f0-79c0-42c1-bf17-8e6abce7520f\\blobs\\2a\\2a7b512e850bb3fc6933c6171dee85b22d7fe656ae65728d5abf9226a68d08e2"
+        }
+      }
+    },
+    "ede42434-a2fa-4628-9f5d-6321eddad144": {
+      "actor": {
+        "kind": "outside",
+        "name": "Outside"
+      },
+      "label": "Changed outside the app",
+      "startedAt": 1794463179734,
+      "endedAt": 1794463179736,
+      "files": {
+        "index.html": {
+          "before": "C:\\Users\\yasse\\.cache\\hyperframes\\history\\09e474f0-79c0-42c1-bf17-8e6abce7520f\\blobs\\c6\\c68fd2401acb7c509bffc970b2e2a2fcde549522eb6689d6cf45d76db1252ac5",
+          "after": "C:\\Users\\yasse\\.cache\\hyperframes\\history\\09e474f0-79c0-42c1-bf17-8e6abce7520f\\blobs\\82\\8243fe8ecd284addc10b6d505064a18b3c21e73447824be89c32db7e2925a06b"
+        }
+      }
+    },
+    "768722a3-639d-4477-bf7c-067cd3150dbe": {
+      "actor": {
+        "kind": "outside",
+        "name": "Outside"
+      },
+      "label": "Changed outside the app",
+      "startedAt": 1794463274140,
+      "endedAt": 1794463274142,
+      "files": {
+        "index.html": {
+          "before": "C:\\Users\\yasse\\.cache\\hyperframes\\history\\09e474f0-79c0-42c1-bf17-8e6abce7520f\\blobs\\82\\8243fe8ecd284addc10b6d505064a18b3c21e73447824be89c32db7e2925a06b",
+          "after": "C:\\Users\\yasse\\.cache\\hyperframes\\history\\09e474f0-79c0-42c1-bf17-8e6abce7520f\\blobs\\b2\\b26844f45cc558a488b9295cae0aaab1897ca6c236cbb796b92fe86ef7ab987c"
+        }
+      }
+    },
+    "1a6a40cc-b28a-4bc4-be41-d608b875231f": {
+      "actor": {
+        "kind": "outside",
+        "name": "Outside"
+      },
+      "label": "Changed outside the app",
+      "startedAt": 1794463339588,
+      "endedAt": 1794463339595,
+      "files": {
+        "index.html": {
+          "before": "C:\\Users\\yasse\\.cache\\hyperframes\\history\\09e474f0-79c0-42c1-bf17-8e6abce7520f\\blobs\\b2\\b26844f45cc558a488b9295cae0aaab1897ca6c236cbb796b92fe86ef7ab987c",
+          "after": "C:\\Users\\yasse\\.cache\\hyperframes\\history\\09e474f0-79c0-42c1-bf17-8e6abce7520f\\blobs\\fd\\fd509994605136c75c2bc3ad0d9da1417b2d0adb63a189ef0d59cf3c86e858c5"
+        }
+      }
+    },
+    "b92ea4be-ad6a-4884-a9c5-8925f6998b27": {
+      "actor": {
+        "kind": "outside",
+        "name": "Outside"
+      },
+      "label": "Changed outside the app",
+      "startedAt": 1794463403087,
+      "endedAt": 1794463403095,
+      "files": {
+        "index.html": {
+          "before": "C:\\Users\\yasse\\.cache\\hyperframes\\history\\09e474f0-79c0-42c1-bf17-8e6abce7520f\\blobs\\fd\\fd509994605136c75c2bc3ad0d9da1417b2d0adb63a189ef0d59cf3c86e858c5",
+          "after": "C:\\Users\\yasse\\.cache\\hyperframes\\history\\09e474f0-79c0-42c1-bf17-8e6abce7520f\\blobs\\ce\\ceac4064aa325f6f8027511972ad0d445ed8e0212bd90011e7867f384a43bb0d"
+        }
+      }
+    },
+    "4ed12845-4380-4159-91a3-25e6d388de37": {
+      "actor": {
+        "kind": "outside",
+        "name": "Outside"
+      },
+      "label": "Changed outside the app",
+      "startedAt": 1794463443673,
+      "endedAt": 1794463443676,
+      "files": {
+        "render.log": {
+          "before": null,
+          "after": "C:\\Users\\yasse\\.cache\\hyperframes\\history\\09e474f0-79c0-42c1-bf17-8e6abce7520f\\blobs\\3d\\3d11af022e8bf3469e0f760752511e3c6cb5b531a6d05146e8b94de5ce1c5a9c"
+        }
+      }
+    }
+  },
+  "checks": {
+    "latest": {
+      "revision": "b92ea4be-ad6a-4884-a9c5-8925f6998b27",
+      "id": "c11fbef3-70af-44d2-97bd-4c1de15bafbc"
+    },
+    "revisions": {
+      "0eacd88c-7d2b-43a9-808f-5fbbdffc43f3": [
+        {
+          "id": "8e514350-d787-44dd-9468-77fbc42f65c4",
+          "scope": "project",
+          "report": "C:\\Users\\yasse\\OneDrive\\codigo\\DineroYa\\dineroya-trailer\\.hyperframes\\artifacts\\checks\\8e514350-d787-44dd-9468-77fbc42f65c4.json",
+          "metadata": {
+            "ok": false,
+            "browserSkipped": false,
+            "options": {
+              "samples": 9,
+              "atTransitions": false,
+              "maxIssues": 80,
+              "collapseStatic": true,
+              "tolerance": 2,
+              "timeout": 45000,
+              "cache": true,
+              "contrast": true,
+              "craft": true,
+              "strict": false,
+              "snapshots": false,
+              "browserGpuMode": "auto",
+              "includeUnmounted": false
+            }
+          },
+          "createdAt": 1794463155095,
+          "contentHash": "3e6cc2887f268982e6ffd0fad50886308657c4780fcaa6f48e2440bfffefa248",
+          "revision": "0eacd88c-7d2b-43a9-808f-5fbbdffc43f3",
+          "inputFingerprint": "11052bb3acc12d6b44800e4f356c922c8a995a2be460e29434629c6f4e7d344a",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        }
+      ],
+      "ede42434-a2fa-4628-9f5d-6321eddad144": [
+        {
+          "id": "3d14b947-fa7a-4400-a383-f24654d2c31a",
+          "scope": "project",
+          "report": "C:\\Users\\yasse\\OneDrive\\codigo\\DineroYa\\dineroya-trailer\\.hyperframes\\artifacts\\checks\\3d14b947-fa7a-4400-a383-f24654d2c31a.json",
+          "metadata": {
+            "ok": false,
+            "browserSkipped": false,
+            "options": {
+              "samples": 9,
+              "atTransitions": false,
+              "maxIssues": 80,
+              "collapseStatic": true,
+              "tolerance": 2,
+              "timeout": 45000,
+              "cache": true,
+              "contrast": true,
+              "craft": true,
+              "strict": false,
+              "snapshots": false,
+              "browserGpuMode": "auto",
+              "includeUnmounted": false
+            }
+          },
+          "createdAt": 1794463195471,
+          "contentHash": "20778518093c9e62d9b60c32db0d5479ccf1352593d6c123828c8ebd54f5ad31",
+          "revision": "ede42434-a2fa-4628-9f5d-6321eddad144",
+          "inputFingerprint": "d801cedf55ed6c063fcfc6653415996c1f18fd681d5132fe507c4da56cadb38e",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "id": "1373d07c-42b0-4159-92f6-048991b9eac4",
+          "scope": "project",
+          "report": "C:\\Users\\yasse\\OneDrive\\codigo\\DineroYa\\dineroya-trailer\\.hyperframes\\artifacts\\checks\\1373d07c-42b0-4159-92f6-048991b9eac4.json",
+          "metadata": {
+            "ok": true,
+            "browserSkipped": false,
+            "options": {
+              "samples": 9,
+              "atTransitions": false,
+              "maxIssues": 80,
+              "collapseStatic": true,
+              "tolerance": 2,
+              "timeout": 45000,
+              "cache": true,
+              "contrast": true,
+              "craft": true,
+              "strict": false,
+              "snapshots": false,
+              "browserGpuMode": "auto",
+              "includeUnmounted": false
+            }
+          },
+          "createdAt": 1794463254152,
+          "contentHash": "8840da624a45badc81d03e3aeec861b0e79915b9d2dd3e6a60ae46b6f814b178",
+          "revision": "ede42434-a2fa-4628-9f5d-6321eddad144",
+          "inputFingerprint": "d801cedf55ed6c063fcfc6653415996c1f18fd681d5132fe507c4da56cadb38e",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        }
+      ],
+      "768722a3-639d-4477-bf7c-067cd3150dbe": [
+        {
+          "id": "fc5c642f-fd62-489d-b283-877fc0fccfa7",
+          "scope": "project",
+          "report": "C:\\Users\\yasse\\OneDrive\\codigo\\DineroYa\\dineroya-trailer\\.hyperframes\\artifacts\\checks\\fc5c642f-fd62-489d-b283-877fc0fccfa7.json",
+          "metadata": {
+            "ok": true,
+            "browserSkipped": false,
+            "options": {
+              "samples": 9,
+              "atTransitions": false,
+              "maxIssues": 80,
+              "collapseStatic": true,
+              "tolerance": 2,
+              "timeout": 45000,
+              "cache": true,
+              "contrast": true,
+              "craft": true,
+              "strict": false,
+              "snapshots": false,
+              "browserGpuMode": "auto",
+              "includeUnmounted": false
+            }
+          },
+          "createdAt": 1794463286348,
+          "contentHash": "a60b4c0aa94384fb13fb89497d7acf56a4174682974f6bf67bbd54cd1fd4312d",
+          "revision": "768722a3-639d-4477-bf7c-067cd3150dbe",
+          "inputFingerprint": "9754d0a82d53d39737a70b0ae2c0403e3de1285ea2267a7e2e8418eae86a5695",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        }
+      ],
+      "1a6a40cc-b28a-4bc4-be41-d608b875231f": [
+        {
+          "id": "fe8eb33f-44fe-474e-80cc-41f63a833936",
+          "scope": "project",
+          "report": "C:\\Users\\yasse\\OneDrive\\codigo\\DineroYa\\dineroya-trailer\\.hyperframes\\artifacts\\checks\\fe8eb33f-44fe-474e-80cc-41f63a833936.json",
+          "metadata": {
+            "ok": true,
+            "browserSkipped": false,
+            "options": {
+              "samples": 9,
+              "atTransitions": false,
+              "maxIssues": 80,
+              "collapseStatic": true,
+              "tolerance": 2,
+              "timeout": 45000,
+              "cache": true,
+              "contrast": true,
+              "craft": true,
+              "strict": false,
+              "snapshots": false,
+              "browserGpuMode": "auto",
+              "includeUnmounted": false
+            }
+          },
+          "createdAt": 1794463358016,
+          "contentHash": "248a6d26b975c1fe62d8dbf2c65c0a195274807e7f8747bcb03193a128a17044",
+          "revision": "1a6a40cc-b28a-4bc4-be41-d608b875231f",
+          "inputFingerprint": "df1285b400e355c8b82c5ffedfd69a9dd08653d97fa268ca197c3cbab606f4a9",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        }
+      ],
+      "b92ea4be-ad6a-4884-a9c5-8925f6998b27": [
+        {
+          "id": "c11fbef3-70af-44d2-97bd-4c1de15bafbc",
+          "scope": "project",
+          "report": "C:\\Users\\yasse\\OneDrive\\codigo\\DineroYa\\dineroya-trailer\\.hyperframes\\artifacts\\checks\\c11fbef3-70af-44d2-97bd-4c1de15bafbc.json",
+          "metadata": {
+            "ok": true,
+            "browserSkipped": false,
+            "options": {
+              "samples": 9,
+              "atTransitions": false,
+              "maxIssues": 80,
+              "collapseStatic": true,
+              "tolerance": 2,
+              "timeout": 45000,
+              "cache": true,
+              "contrast": true,
+              "craft": true,
+              "strict": false,
+              "snapshots": false,
+              "browserGpuMode": "auto",
+              "includeUnmounted": false
+            }
+          },
+          "createdAt": 1794463421539,
+          "contentHash": "45a474d1e838631ffef5f1f9c150839eec594ac58455439cdf5c383f634ed4ca",
+          "revision": "b92ea4be-ad6a-4884-a9c5-8925f6998b27",
+          "inputFingerprint": "5c54d74dbfd7312155ff86ccc42f87b6a68f739f2c0a6c923933161ecc9e6958",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        }
+      ]
+    },
+    "unversioned": [
+      {
+        "id": "0ede6898-66c6-4002-8bd8-717f92c28bda",
+        "scope": "project",
+        "report": "C:\\Users\\yasse\\OneDrive\\codigo\\DineroYa\\dineroya-trailer\\.hyperframes\\artifacts\\checks\\0ede6898-66c6-4002-8bd8-717f92c28bda.json",
+        "metadata": {
+          "ok": false,
+          "browserSkipped": false,
+          "options": {
+            "samples": 9,
+            "atTransitions": false,
+            "maxIssues": 80,
+            "collapseStatic": true,
+            "tolerance": 2,
+            "timeout": 45000,
+            "cache": true,
+            "contrast": true,
+            "craft": true,
+            "strict": false,
+            "snapshots": false,
+            "browserGpuMode": "auto",
+            "includeUnmounted": false
+          }
+        },
+        "createdAt": 1794463075606,
+        "contentHash": "aa2fb117df34bf3fea1cd7c38477c10f8873dc32d02695cf40147c0ad097942a",
+        "revision": null,
+        "inputFingerprint": "effe393cda57a8b1289c10cd1caa9d2c926584538c92addb3a14e85a4e221e72",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      }
+    ]
+  },
+  "snapshots": {
+    "latest": {
+      "revision": "1a6a40cc-b28a-4bc4-be41-d608b875231f",
+      "id": "d83779bc-738d-4c20-8102-8cd02a3d044d-4"
+    },
+    "revisions": {
+      "768722a3-639d-4477-bf7c-067cd3150dbe": [
+        {
+          "scope": "full",
+          "id": "bb874a4e-a21b-4a8b-a0c1-059ce6105923-0",
+          "image": "C:\\Users\\yasse\\OneDrive\\codigo\\DineroYa\\dineroya-trailer\\.hyperframes\\artifacts\\snapshots\\621158c6-27de-4e46-9654-5e1836900433\\frame-00-at-1.9s.png",
+          "time": 1.9,
+          "metadata": {
+            "width": 1080,
+            "height": 1920,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1794463302482,
+          "contentHash": "b2d2d2b4b8baa9380f17d1ef2b4e8f9f1a77da40bcf39f0e12a09f2fb172159f",
+          "revision": "768722a3-639d-4477-bf7c-067cd3150dbe",
+          "inputFingerprint": "9754d0a82d53d39737a70b0ae2c0403e3de1285ea2267a7e2e8418eae86a5695",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "bb874a4e-a21b-4a8b-a0c1-059ce6105923-1",
+          "image": "C:\\Users\\yasse\\OneDrive\\codigo\\DineroYa\\dineroya-trailer\\.hyperframes\\artifacts\\snapshots\\621158c6-27de-4e46-9654-5e1836900433\\frame-01-at-4.7s.png",
+          "time": 4.7,
+          "metadata": {
+            "width": 1080,
+            "height": 1920,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1794463302482,
+          "contentHash": "ab29b255c49b392ff38c697978a6c4ed772763c1a9aa91141991e035b1ea3c88",
+          "revision": "768722a3-639d-4477-bf7c-067cd3150dbe",
+          "inputFingerprint": "9754d0a82d53d39737a70b0ae2c0403e3de1285ea2267a7e2e8418eae86a5695",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "bb874a4e-a21b-4a8b-a0c1-059ce6105923-2",
+          "image": "C:\\Users\\yasse\\OneDrive\\codigo\\DineroYa\\dineroya-trailer\\.hyperframes\\artifacts\\snapshots\\621158c6-27de-4e46-9654-5e1836900433\\frame-02-at-8.7s.png",
+          "time": 8.7,
+          "metadata": {
+            "width": 1080,
+            "height": 1920,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1794463302482,
+          "contentHash": "b39d5bad304cb195dfb366392f55fb4c130c20c95f63f20b93411fa091b517ce",
+          "revision": "768722a3-639d-4477-bf7c-067cd3150dbe",
+          "inputFingerprint": "9754d0a82d53d39737a70b0ae2c0403e3de1285ea2267a7e2e8418eae86a5695",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "bb874a4e-a21b-4a8b-a0c1-059ce6105923-3",
+          "image": "C:\\Users\\yasse\\OneDrive\\codigo\\DineroYa\\dineroya-trailer\\.hyperframes\\artifacts\\snapshots\\621158c6-27de-4e46-9654-5e1836900433\\frame-03-at-13.9s.png",
+          "time": 13.9,
+          "metadata": {
+            "width": 1080,
+            "height": 1920,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1794463302482,
+          "contentHash": "85676fb0e43ba7e6af14591b1acc6f007bd98e6766511b68365cfde3c65a3178",
+          "revision": "768722a3-639d-4477-bf7c-067cd3150dbe",
+          "inputFingerprint": "9754d0a82d53d39737a70b0ae2c0403e3de1285ea2267a7e2e8418eae86a5695",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "bb874a4e-a21b-4a8b-a0c1-059ce6105923-4",
+          "image": "C:\\Users\\yasse\\OneDrive\\codigo\\DineroYa\\dineroya-trailer\\.hyperframes\\artifacts\\snapshots\\621158c6-27de-4e46-9654-5e1836900433\\frame-04-at-16.9s.png",
+          "time": 16.9,
+          "metadata": {
+            "width": 1080,
+            "height": 1920,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1794463302482,
+          "contentHash": "ddf19b4301dc9e82f8c3e27eb6a1643398532257851755f130fd219f428fb529",
+          "revision": "768722a3-639d-4477-bf7c-067cd3150dbe",
+          "inputFingerprint": "9754d0a82d53d39737a70b0ae2c0403e3de1285ea2267a7e2e8418eae86a5695",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "bb874a4e-a21b-4a8b-a0c1-059ce6105923-5",
+          "image": "C:\\Users\\yasse\\OneDrive\\codigo\\DineroYa\\dineroya-trailer\\.hyperframes\\artifacts\\snapshots\\621158c6-27de-4e46-9654-5e1836900433\\frame-05-at-20.4s.png",
+          "time": 20.4,
+          "metadata": {
+            "width": 1080,
+            "height": 1920,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1794463302483,
+          "contentHash": "6f3029876d5a5a3052cda43c45731d4c9cede0b0632e5f326264d3d372cd24f2",
+          "revision": "768722a3-639d-4477-bf7c-067cd3150dbe",
+          "inputFingerprint": "9754d0a82d53d39737a70b0ae2c0403e3de1285ea2267a7e2e8418eae86a5695",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "bb874a4e-a21b-4a8b-a0c1-059ce6105923-6",
+          "image": "C:\\Users\\yasse\\OneDrive\\codigo\\DineroYa\\dineroya-trailer\\.hyperframes\\artifacts\\snapshots\\621158c6-27de-4e46-9654-5e1836900433\\frame-06-at-22.9s.png",
+          "time": 22.9,
+          "metadata": {
+            "width": 1080,
+            "height": 1920,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1794463302483,
+          "contentHash": "b3e88f80a2b9d5b65aaf5b319d28f1bee92fc10fbeb2de86a21c406b55c0e736",
+          "revision": "768722a3-639d-4477-bf7c-067cd3150dbe",
+          "inputFingerprint": "9754d0a82d53d39737a70b0ae2c0403e3de1285ea2267a7e2e8418eae86a5695",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "bb874a4e-a21b-4a8b-a0c1-059ce6105923-7",
+          "image": "C:\\Users\\yasse\\OneDrive\\codigo\\DineroYa\\dineroya-trailer\\.hyperframes\\artifacts\\snapshots\\621158c6-27de-4e46-9654-5e1836900433\\frame-07-at-26.9s.png",
+          "time": 26.9,
+          "metadata": {
+            "width": 1080,
+            "height": 1920,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1794463302483,
+          "contentHash": "8919b38e5966f4172eca33c66ddd4ee600fc87163ae3619d4276b456629b3ea7",
+          "revision": "768722a3-639d-4477-bf7c-067cd3150dbe",
+          "inputFingerprint": "9754d0a82d53d39737a70b0ae2c0403e3de1285ea2267a7e2e8418eae86a5695",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "bb874a4e-a21b-4a8b-a0c1-059ce6105923-8",
+          "image": "C:\\Users\\yasse\\OneDrive\\codigo\\DineroYa\\dineroya-trailer\\.hyperframes\\artifacts\\snapshots\\621158c6-27de-4e46-9654-5e1836900433\\frame-08-at-28.25s.png",
+          "time": 28.25,
+          "metadata": {
+            "width": 1080,
+            "height": 1920,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1794463302484,
+          "contentHash": "c970fad91d4455d1964768dad1af9e70058ce313c69b4c261f5336fe3186d41e",
+          "revision": "768722a3-639d-4477-bf7c-067cd3150dbe",
+          "inputFingerprint": "9754d0a82d53d39737a70b0ae2c0403e3de1285ea2267a7e2e8418eae86a5695",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        }
+      ],
+      "1a6a40cc-b28a-4bc4-be41-d608b875231f": [
+        {
+          "scope": "full",
+          "id": "d83779bc-738d-4c20-8102-8cd02a3d044d-0",
+          "image": "C:\\Users\\yasse\\OneDrive\\codigo\\DineroYa\\dineroya-trailer\\.hyperframes\\artifacts\\snapshots\\7f996c01-403d-4aa6-aa1a-6f2d7528d1e8\\frame-00-at-8.9s.png",
+          "time": 8.9,
+          "metadata": {
+            "width": 1080,
+            "height": 1920,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1794463371473,
+          "contentHash": "348fa13b3185f03196dc9542c6bd29997e3522666991343c71f89ca06bd2b522",
+          "revision": "1a6a40cc-b28a-4bc4-be41-d608b875231f",
+          "inputFingerprint": "df1285b400e355c8b82c5ffedfd69a9dd08653d97fa268ca197c3cbab606f4a9",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "d83779bc-738d-4c20-8102-8cd02a3d044d-1",
+          "image": "C:\\Users\\yasse\\OneDrive\\codigo\\DineroYa\\dineroya-trailer\\.hyperframes\\artifacts\\snapshots\\7f996c01-403d-4aa6-aa1a-6f2d7528d1e8\\frame-01-at-14.2s.png",
+          "time": 14.2,
+          "metadata": {
+            "width": 1080,
+            "height": 1920,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1794463371475,
+          "contentHash": "3a2a34d7d66f745b323860652eb1bf5221690f3b0899eded3670a93a86ed808b",
+          "revision": "1a6a40cc-b28a-4bc4-be41-d608b875231f",
+          "inputFingerprint": "df1285b400e355c8b82c5ffedfd69a9dd08653d97fa268ca197c3cbab606f4a9",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "d83779bc-738d-4c20-8102-8cd02a3d044d-2",
+          "image": "C:\\Users\\yasse\\OneDrive\\codigo\\DineroYa\\dineroya-trailer\\.hyperframes\\artifacts\\snapshots\\7f996c01-403d-4aa6-aa1a-6f2d7528d1e8\\frame-02-at-20.6s.png",
+          "time": 20.6,
+          "metadata": {
+            "width": 1080,
+            "height": 1920,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1794463371477,
+          "contentHash": "370cc2212a54d95205b6b7a2ace54f4d386fdfadf647552cc0607181193d3940",
+          "revision": "1a6a40cc-b28a-4bc4-be41-d608b875231f",
+          "inputFingerprint": "df1285b400e355c8b82c5ffedfd69a9dd08653d97fa268ca197c3cbab606f4a9",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "d83779bc-738d-4c20-8102-8cd02a3d044d-3",
+          "image": "C:\\Users\\yasse\\OneDrive\\codigo\\DineroYa\\dineroya-trailer\\.hyperframes\\artifacts\\snapshots\\7f996c01-403d-4aa6-aa1a-6f2d7528d1e8\\frame-03-at-23.4s.png",
+          "time": 23.4,
+          "metadata": {
+            "width": 1080,
+            "height": 1920,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1794463371478,
+          "contentHash": "a713a78f3db53f8eded52e81b3503b22f2cb76b915237716db47e4f054c14fa6",
+          "revision": "1a6a40cc-b28a-4bc4-be41-d608b875231f",
+          "inputFingerprint": "df1285b400e355c8b82c5ffedfd69a9dd08653d97fa268ca197c3cbab606f4a9",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        },
+        {
+          "scope": "full",
+          "id": "d83779bc-738d-4c20-8102-8cd02a3d044d-4",
+          "image": "C:\\Users\\yasse\\OneDrive\\codigo\\DineroYa\\dineroya-trailer\\.hyperframes\\artifacts\\snapshots\\7f996c01-403d-4aa6-aa1a-6f2d7528d1e8\\frame-04-at-28.25s.png",
+          "time": 28.25,
+          "metadata": {
+            "width": 1080,
+            "height": 1920,
+            "zoomScale": 1,
+            "browserGpuMode": "auto",
+            "warnings": [],
+            "partial": false
+          },
+          "createdAt": 1794463371479,
+          "contentHash": "c0a0a892969000c22499229858748e0642aace2456d128027f1c4d51eff2e6c6",
+          "revision": "1a6a40cc-b28a-4bc4-be41-d608b875231f",
+          "inputFingerprint": "df1285b400e355c8b82c5ffedfd69a9dd08653d97fa268ca197c3cbab606f4a9",
+          "inputScope": "local-project-files",
+          "attribution": "recorded-revision"
+        }
+      ]
+    },
+    "unversioned": []
+  },
+  "renders": {
+    "latest": {
+      "id": "80d3c8b0-cb70-4071-82a7-1d2b4d4b5098",
+      "completedAt": 1794463549310,
+      "output": "C:\\Users\\yasse\\OneDrive\\codigo\\DineroYa\\dineroya-trailer\\dineroya-trailer.mp4",
+      "status": "completed",
+      "revision": null
+    },
+    "retainedRevisions": []
+  },
+  "pendingArtifactCleanup": []
+}

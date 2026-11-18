@@ -1,0 +1,1716 @@
+{
+  "ok": true,
+  "strict": false,
+  "browserSkipped": false,
+  "lint": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 9,
+    "infoCount": 0,
+    "findings": [
+      {
+        "code": "composition_file_too_large",
+        "severity": "warning",
+        "message": "This HTML composition file has 415 lines. Smaller sub-compositions are easier to read, iterate on, and diff.",
+        "selector": "[data-composition-id]",
+        "dataAttributes": {},
+        "sourceFile": "C:\\Users\\yasse\\OneDrive\\codigo\\DineroYa\\dineroya-trailer\\index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Split coherent scenes or layers into separate .html files under compositions/, then mount them from the parent with data-composition-src so each file stays small enough to inspect, revise, and validate independently."
+      },
+      {
+        "code": "nested_structure_needs_subcomposition",
+        "severity": "warning",
+        "message": "<section id=\"s1\"> is a timeline element that contains nested <div id=\"s1-kicker\">. The timeline shows one row per top-level element, and the root composition is built only from sub-compositions.",
+        "selector": "#s1",
+        "dataAttributes": {},
+        "sourceFile": "C:\\Users\\yasse\\OneDrive\\codigo\\DineroYa\\dineroya-trailer\\index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Move <section id=\"s1\"> and its contents into a sub-composition file and mount it with data-composition-src."
+      },
+      {
+        "code": "nested_structure_needs_subcomposition",
+        "severity": "warning",
+        "message": "<section id=\"s2\"> is a timeline element that contains nested <div>. The timeline shows one row per top-level element, and the root composition is built only from sub-compositions.",
+        "selector": "#s2",
+        "dataAttributes": {},
+        "sourceFile": "C:\\Users\\yasse\\OneDrive\\codigo\\DineroYa\\dineroya-trailer\\index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Move <section id=\"s2\"> and its contents into a sub-composition file and mount it with data-composition-src."
+      },
+      {
+        "code": "nested_structure_needs_subcomposition",
+        "severity": "warning",
+        "message": "<section id=\"s3\"> is a timeline element that contains nested <div id=\"dash\">. The timeline shows one row per top-level element, and the root composition is built only from sub-compositions.",
+        "selector": "#s3",
+        "dataAttributes": {},
+        "sourceFile": "C:\\Users\\yasse\\OneDrive\\codigo\\DineroYa\\dineroya-trailer\\index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Move <section id=\"s3\"> and its contents into a sub-composition file and mount it with data-composition-src."
+      },
+      {
+        "code": "nested_structure_needs_subcomposition",
+        "severity": "warning",
+        "message": "<section id=\"s4\"> is a timeline element that contains nested <div id=\"phone4\">. The timeline shows one row per top-level element, and the root composition is built only from sub-compositions.",
+        "selector": "#s4",
+        "dataAttributes": {},
+        "sourceFile": "C:\\Users\\yasse\\OneDrive\\codigo\\DineroYa\\dineroya-trailer\\index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Move <section id=\"s4\"> and its contents into a sub-composition file and mount it with data-composition-src."
+      },
+      {
+        "code": "nested_structure_needs_subcomposition",
+        "severity": "warning",
+        "message": "<section id=\"s5\"> is a timeline element that contains nested <div>. The timeline shows one row per top-level element, and the root composition is built only from sub-compositions.",
+        "selector": "#s5",
+        "dataAttributes": {},
+        "sourceFile": "C:\\Users\\yasse\\OneDrive\\codigo\\DineroYa\\dineroya-trailer\\index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Move <section id=\"s5\"> and its contents into a sub-composition file and mount it with data-composition-src."
+      },
+      {
+        "code": "nested_structure_needs_subcomposition",
+        "severity": "warning",
+        "message": "<section id=\"s6\"> is a timeline element that contains nested <div>. The timeline shows one row per top-level element, and the root composition is built only from sub-compositions.",
+        "selector": "#s6",
+        "dataAttributes": {},
+        "sourceFile": "C:\\Users\\yasse\\OneDrive\\codigo\\DineroYa\\dineroya-trailer\\index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Move <section id=\"s6\"> and its contents into a sub-composition file and mount it with data-composition-src."
+      },
+      {
+        "code": "nested_structure_needs_subcomposition",
+        "severity": "warning",
+        "message": "<section id=\"s7\"> is a timeline element that contains nested <div>. The timeline shows one row per top-level element, and the root composition is built only from sub-compositions.",
+        "selector": "#s7",
+        "dataAttributes": {},
+        "sourceFile": "C:\\Users\\yasse\\OneDrive\\codigo\\DineroYa\\dineroya-trailer\\index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Move <section id=\"s7\"> and its contents into a sub-composition file and mount it with data-composition-src."
+      },
+      {
+        "code": "nested_structure_needs_subcomposition",
+        "severity": "warning",
+        "message": "<section id=\"s8\"> is a timeline element that contains nested <div>. The timeline shows one row per top-level element, and the root composition is built only from sub-compositions.",
+        "selector": "#s8",
+        "dataAttributes": {},
+        "sourceFile": "C:\\Users\\yasse\\OneDrive\\codigo\\DineroYa\\dineroya-trailer\\index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Move <section id=\"s8\"> and its contents into a sub-composition file and mount it with data-composition-src."
+      }
+    ],
+    "filesScanned": 1
+  },
+  "runtime": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": []
+  },
+  "layout": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 1,
+    "findings": [
+      {
+        "code": "text_box_overflow",
+        "severity": "info",
+        "time": 1.583,
+        "selector": "#s1-a",
+        "message": "Text extends outside its nearest visual/container box.",
+        "rect": {
+          "left": 76,
+          "top": 448,
+          "right": 765.39,
+          "bottom": 619,
+          "width": 689.39,
+          "height": 171
+        },
+        "containerSelector": "div.wrap > div:nth-of-type(1)",
+        "text": "¿CUÁNTO",
+        "fixHint": "Text is 689px x 171px inside 928px x 133px and overflows by up to 22px; increase the container height to at least ~171px or shrink font-size from 148px to ~115px, or allow wrapping with max-width/fitTextFontSize.",
+        "containerRect": {
+          "left": 76,
+          "top": 470,
+          "right": 1004,
+          "bottom": 603.19,
+          "width": 928,
+          "height": 133.19
+        },
+        "overflow": {
+          "top": 22,
+          "bottom": 15.81
+        },
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 76,
+          "y": 448,
+          "width": 689.39,
+          "height": 171
+        },
+        "firstSeen": 1.583,
+        "lastSeen": 1.583,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          1.583
+        ]
+      }
+    ],
+    "duration": 28.5,
+    "samples": [
+      1.583,
+      4.75,
+      7.917,
+      11.083,
+      14.25,
+      17.417,
+      20.583,
+      23.75,
+      26.917
+    ],
+    "transitionSamples": [],
+    "transitionSamplesDropped": 0,
+    "tolerance": 2,
+    "totalIssueCount": 1,
+    "truncated": false
+  },
+  "motion": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": [],
+    "enabled": false,
+    "samples": 0
+  },
+  "contrast": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": [],
+    "enabled": true,
+    "samples": [
+      1.583,
+      7.917,
+      14.25,
+      20.583,
+      26.917
+    ],
+    "checked": 59,
+    "passed": 59
+  },
+  "craft": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 13,
+    "infoCount": 0,
+    "findings": [
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "\"TE DEBEN\" (2 words) is on screen 0.20 s (±0.01 s), under its 0.40 s floor: hold it about 0.5 s + 0.3 s a word (1.10 s here) before it leaves or changes; see references/motion.md.",
+        "text": "TE DEBEN",
+        "selector": "#s1-ghost",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 76,
+          "y": 429,
+          "width": 657.77,
+          "height": 179
+        },
+        "time": 1.141,
+        "words": 2,
+        "seconds": 0.195,
+        "floorSeconds": 0.4,
+        "measured": [
+          {
+            "time": 0.875,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 1,
+            "opacity": 0.17,
+            "heightPx": 179
+          },
+          {
+            "time": 1.125,
+            "opacity": 0.33,
+            "heightPx": 179
+          },
+          {
+            "time": 1.25,
+            "opacity": 0.5,
+            "heightPx": 179
+          },
+          {
+            "time": 1.375,
+            "opacity": 0.22,
+            "heightPx": 179
+          },
+          {
+            "time": 1.5,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 1.625,
+            "opacity": null,
+            "heightPx": null
+          }
+        ]
+      },
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "\"Y cuánto de eso nunca vas a volver a ver.\" (10 words) is on screen 1.54 s (±0.01 s), under its 2.63 s floor: hold it about 0.5 s + 0.3 s a word (3.50 s here) before it leaves or changes; see references/motion.md.",
+        "text": "Y cuánto de eso nunca vas a volver a ver.",
+        "selector": "#s1-hint",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 78,
+          "y": 1694.03,
+          "width": 721.88,
+          "height": 44
+        },
+        "time": 1.602,
+        "words": 10,
+        "seconds": 1.539,
+        "floorSeconds": 2.625,
+        "measured": [
+          {
+            "time": 1.25,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 1.375,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 1.5,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 1.625,
+            "opacity": 0.59,
+            "heightPx": 44
+          },
+          {
+            "time": 1.75,
+            "opacity": 0.92,
+            "heightPx": 44
+          },
+          {
+            "time": 1.875,
+            "opacity": 0.99,
+            "heightPx": 44
+          },
+          {
+            "time": 2,
+            "opacity": 1,
+            "heightPx": 44
+          },
+          {
+            "time": 2.75,
+            "opacity": 1,
+            "heightPx": 44
+          },
+          {
+            "time": 2.875,
+            "opacity": 1,
+            "heightPx": 44
+          },
+          {
+            "time": 3,
+            "opacity": 0.92,
+            "heightPx": 44
+          },
+          {
+            "time": 3.125,
+            "opacity": 0.64,
+            "heightPx": 44
+          },
+          {
+            "time": 3.25,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 3.375,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 3.5,
+            "opacity": null,
+            "heightPx": null
+          }
+        ]
+      },
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "\"Cada semana se te escapan cuotas, abonos y promesas de pago.\" (11 words) is on screen 1.80 s (±0.01 s), under its 2.85 s floor: hold it about 0.5 s + 0.3 s a word (3.80 s here) before it leaves or changes; see references/motion.md.",
+        "text": "Cada semana se te escapan cuotas, abonos y promesas de pago.",
+        "selector": "#s2-foot",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 76,
+          "y": 1664.93,
+          "width": 787.11,
+          "height": 90.78999999999996
+        },
+        "time": 5.203,
+        "words": 11,
+        "seconds": 1.797,
+        "floorSeconds": 2.85,
+        "measured": [
+          {
+            "time": 4.875,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 5,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 5.125,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 5.25,
+            "opacity": 0.71,
+            "heightPx": 91
+          },
+          {
+            "time": 5.375,
+            "opacity": 0.95,
+            "heightPx": 91
+          },
+          {
+            "time": 5.5,
+            "opacity": 1,
+            "heightPx": 91
+          },
+          {
+            "time": 5.625,
+            "opacity": 1,
+            "heightPx": 91
+          },
+          {
+            "time": 6.5,
+            "opacity": 1,
+            "heightPx": 91
+          },
+          {
+            "time": 6.625,
+            "opacity": 1,
+            "heightPx": 91
+          },
+          {
+            "time": 6.75,
+            "opacity": 0.99,
+            "heightPx": 91
+          },
+          {
+            "time": 6.875,
+            "opacity": 0.84,
+            "heightPx": 91
+          },
+          {
+            "time": 7,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 7.125,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 7.25,
+            "opacity": null,
+            "heightPx": null
+          }
+        ]
+      },
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "\"Préstamo #1043 · quincenal\" (3 words) is on screen 0.10 s (±0.01 s), under its 1.05 s floor: hold it about 0.5 s + 0.3 s a word (1.40 s here) before it leaves or changes; see references/motion.md.",
+        "text": "Préstamo #1043 · quincenal",
+        "selector": "#phone4 > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2)",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 302.73,
+          "y": 349.86,
+          "width": 266,
+          "height": 35.43000000000001
+        },
+        "time": 11.602,
+        "words": 3,
+        "seconds": 0.102,
+        "floorSeconds": 1.05,
+        "measured": [
+          {
+            "time": 11.25,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 11.375,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 11.5,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 11.625,
+            "opacity": 0.58,
+            "heightPx": 35
+          },
+          {
+            "time": 11.75,
+            "opacity": 0.87,
+            "heightPx": 28
+          },
+          {
+            "time": 11.875,
+            "opacity": 0.97,
+            "heightPx": 25
+          },
+          {
+            "time": 12,
+            "opacity": 0.99,
+            "heightPx": 24
+          }
+        ]
+      },
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "\"SALDO PENDIENTE\" (2 words) is on screen 0.07 s (±0.01 s), under its 0.40 s floor: hold it about 0.5 s + 0.3 s a word (1.10 s here) before it leaves or changes; see references/motion.md.",
+        "text": "SALDO PENDIENTE",
+        "selector": "#phone4 > div:nth-of-type(2) > div:nth-of-type(2)",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 305.27,
+          "y": 408.23,
+          "width": 239.37,
+          "height": 34.25
+        },
+        "time": 11.602,
+        "words": 2,
+        "seconds": 0.07,
+        "floorSeconds": 0.4,
+        "measured": [
+          {
+            "time": 11.25,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 11.375,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 11.5,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 11.625,
+            "opacity": 0.58,
+            "heightPx": 34
+          },
+          {
+            "time": 11.75,
+            "opacity": 0.87,
+            "heightPx": 27
+          },
+          {
+            "time": 11.875,
+            "opacity": 0.97,
+            "heightPx": 25
+          },
+          {
+            "time": 12,
+            "opacity": 0.99,
+            "heightPx": 24
+          }
+        ]
+      },
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "\"Un toque: la cuota se abona, la mora se recalcula y la ca...\" (17 words) is on screen 2.77 s (±0.01 s), under its 4.20 s floor: hold it about 0.5 s + 0.3 s a word (5.60 s here) before it leaves or changes; see references/motion.md.",
+        "text": "Un toque: la cuota se abona, la mora se recalcula y la caja del día queda cuadrada.",
+        "selector": "#s4-sub",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 118.28,
+          "y": 1704.87,
+          "width": 843.44,
+          "height": 90.79999999999995
+        },
+        "time": 12.234,
+        "words": 17,
+        "seconds": 2.766,
+        "floorSeconds": 4.2,
+        "measured": [
+          {
+            "time": 11.875,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 12,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 12.125,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 12.25,
+            "opacity": 0.61,
+            "heightPx": 91
+          },
+          {
+            "time": 12.375,
+            "opacity": 0.9,
+            "heightPx": 91
+          },
+          {
+            "time": 12.5,
+            "opacity": 0.99,
+            "heightPx": 91
+          },
+          {
+            "time": 12.625,
+            "opacity": 1,
+            "heightPx": 91
+          },
+          {
+            "time": 14.5,
+            "opacity": 1,
+            "heightPx": 91
+          },
+          {
+            "time": 14.625,
+            "opacity": 1,
+            "heightPx": 91
+          },
+          {
+            "time": 14.75,
+            "opacity": 1,
+            "heightPx": 91
+          },
+          {
+            "time": 14.875,
+            "opacity": 0.89,
+            "heightPx": 91
+          },
+          {
+            "time": 15,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 15.125,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 15.25,
+            "opacity": null,
+            "heightPx": null
+          }
+        ]
+      },
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "\"Reportes listos para Excel\" (4 words) is on screen 1.07 s (±0.01 s), under its 1.27 s floor: hold it about 0.5 s + 0.3 s a word (1.70 s here) before it leaves or changes; see references/motion.md.",
+        "text": "Reportes listos para Excel",
+        "selector": "#csv",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 626.11,
+          "y": 977.29,
+          "width": 348.89,
+          "height": 33
+        },
+        "time": 20.5,
+        "words": 4,
+        "seconds": 1.07,
+        "floorSeconds": 1.275,
+        "measured": [
+          {
+            "time": 20.125,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 20.25,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 20.375,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 20.5,
+            "opacity": 0.53,
+            "heightPx": 33
+          },
+          {
+            "time": 20.625,
+            "opacity": 0.83,
+            "heightPx": 33
+          },
+          {
+            "time": 20.75,
+            "opacity": 0.98,
+            "heightPx": 33
+          },
+          {
+            "time": 20.875,
+            "opacity": 1,
+            "heightPx": 33
+          },
+          {
+            "time": 21.125,
+            "opacity": 1,
+            "heightPx": 33
+          },
+          {
+            "time": 21.25,
+            "opacity": 1,
+            "heightPx": 33
+          },
+          {
+            "time": 21.375,
+            "opacity": 1,
+            "heightPx": 33
+          },
+          {
+            "time": 21.5,
+            "opacity": 0.73,
+            "heightPx": 33
+          },
+          {
+            "time": 21.625,
+            "opacity": 0.33,
+            "heightPx": 34
+          },
+          {
+            "time": 21.75,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 21.875,
+            "opacity": null,
+            "heightPx": null
+          }
+        ]
+      },
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "\"Próxima cuota\" (2 words) is on screen 0.13 s (±0.01 s), under its 0.40 s floor: hold it about 0.5 s + 0.3 s a word (1.10 s here) before it leaves or changes; see references/motion.md.",
+        "text": "Próxima cuota",
+        "selector": "#phone7 > div:nth-of-type(2) > div:nth-of-type(4) > div:nth-of-type(1) > span:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 394.84,
+          "y": 791.79,
+          "width": 157.77000000000004,
+          "height": 31.75
+        },
+        "time": 22.203,
+        "words": 2,
+        "seconds": 0.133,
+        "floorSeconds": 0.4,
+        "measured": [
+          {
+            "time": 21.875,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 22,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 22.125,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 22.25,
+            "opacity": 0.68,
+            "heightPx": 32
+          },
+          {
+            "time": 22.375,
+            "opacity": 0.9,
+            "heightPx": 29
+          },
+          {
+            "time": 22.5,
+            "opacity": 0.98,
+            "heightPx": 28
+          },
+          {
+            "time": 22.625,
+            "opacity": 0.99,
+            "heightPx": 28
+          }
+        ]
+      },
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "\"Valor cuota\" (2 words) is on screen 0.10 s (±0.01 s), under its 0.40 s floor: hold it about 0.5 s + 0.3 s a word (1.10 s here) before it leaves or changes; see references/motion.md.",
+        "text": "Valor cuota",
+        "selector": "#phone7 > div:nth-of-type(2) > div:nth-of-type(4) > div:nth-of-type(2) > span:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 392.77,
+          "y": 866.12,
+          "width": 126.10000000000002,
+          "height": 30.860000000000014
+        },
+        "time": 22.203,
+        "words": 2,
+        "seconds": 0.102,
+        "floorSeconds": 0.4,
+        "measured": [
+          {
+            "time": 21.875,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 22,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 22.125,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 22.25,
+            "opacity": 0.68,
+            "heightPx": 31
+          },
+          {
+            "time": 22.375,
+            "opacity": 0.9,
+            "heightPx": 29
+          },
+          {
+            "time": 22.5,
+            "opacity": 0.98,
+            "heightPx": 28
+          },
+          {
+            "time": 22.625,
+            "opacity": 0.99,
+            "heightPx": 28
+          }
+        ]
+      },
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "\"$250.000\" (2 words) is on screen 0.07 s (±0.01 s), under its 0.40 s floor: hold it about 0.5 s + 0.3 s a word (1.10 s here) before it leaves or changes; see references/motion.md.",
+        "text": "$250.000",
+        "selector": "#phone7 > div:nth-of-type(2) > div:nth-of-type(4) > div:nth-of-type(2) > b:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 672.88,
+          "y": 873.9,
+          "width": 115.73000000000002,
+          "height": 30.58000000000004
+        },
+        "time": 22.203,
+        "words": 2,
+        "seconds": 0.07,
+        "floorSeconds": 0.4,
+        "measured": [
+          {
+            "time": 21.875,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 22,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 22.125,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 22.25,
+            "opacity": 0.68,
+            "heightPx": 31
+          },
+          {
+            "time": 22.375,
+            "opacity": 0.9,
+            "heightPx": 29
+          },
+          {
+            "time": 22.5,
+            "opacity": 0.98,
+            "heightPx": 28
+          },
+          {
+            "time": 22.625,
+            "opacity": 0.99,
+            "heightPx": 28
+          }
+        ]
+      },
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "\"Canales de pago\" (3 words) is on screen 0.13 s (±0.01 s), under its 1.05 s floor: hold it about 0.5 s + 0.3 s a word (1.40 s here) before it leaves or changes; see references/motion.md.",
+        "text": "Canales de pago",
+        "selector": "#phone7 > div:nth-of-type(2) > div:nth-of-type(4) > div:nth-of-type(3) > span:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 390.71,
+          "y": 940.44,
+          "width": 183.31,
+          "height": 32.450000000000045
+        },
+        "time": 22.203,
+        "words": 3,
+        "seconds": 0.133,
+        "floorSeconds": 1.05,
+        "measured": [
+          {
+            "time": 21.875,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 22,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 22.125,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 22.25,
+            "opacity": 0.68,
+            "heightPx": 32
+          },
+          {
+            "time": 22.375,
+            "opacity": 0.9,
+            "heightPx": 29
+          },
+          {
+            "time": 22.5,
+            "opacity": 0.98,
+            "heightPx": 28
+          },
+          {
+            "time": 22.625,
+            "opacity": 0.99,
+            "heightPx": 28
+          }
+        ]
+      },
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "\"Nequi · Banco\" (2 words) is on screen 0.13 s (±0.01 s), under its 0.40 s floor: hold it about 0.5 s + 0.3 s a word (1.10 s here) before it leaves or changes; see references/motion.md.",
+        "text": "Nequi · Banco",
+        "selector": "#phone7 > div:nth-of-type(2) > div:nth-of-type(4) > div:nth-of-type(3) > b:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 631.03,
+          "y": 947.12,
+          "width": 155.51999999999998,
+          "height": 31.67999999999995
+        },
+        "time": 22.203,
+        "words": 2,
+        "seconds": 0.133,
+        "floorSeconds": 0.4,
+        "measured": [
+          {
+            "time": 21.875,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 22,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 22.125,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 22.25,
+            "opacity": 0.68,
+            "heightPx": 32
+          },
+          {
+            "time": 22.375,
+            "opacity": 0.9,
+            "heightPx": 29
+          },
+          {
+            "time": 22.5,
+            "opacity": 0.98,
+            "heightPx": 28
+          },
+          {
+            "time": 22.625,
+            "opacity": 0.99,
+            "heightPx": 28
+          }
+        ]
+      },
+      {
+        "code": "text_below_floor",
+        "severity": "warning",
+        "message": "Type floor is 28 px (2.6% of the 1080 px short side, what a phone can read) and 74 text elements stay under it for 0.5 s or more, the smallest \"Al día\" at 18 px: set reading text to at least 28 px, or put data-layout-ignore on text that is texture rather than reading; see references/look.md.",
+        "text": "Al día",
+        "selector": "div.tag.ok",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 733.53,
+          "y": 534.02,
+          "width": 70.43,
+          "height": 22.48
+        },
+        "time": 22.25,
+        "times": [
+          0.25,
+          3.5,
+          3.75,
+          3.875,
+          4,
+          4.125,
+          4.25,
+          7.25,
+          7.25,
+          7.25,
+          7.25,
+          7.25,
+          7.25,
+          7.25,
+          7.25,
+          7.25,
+          7.25,
+          7.25,
+          7.25,
+          7.25,
+          7.25,
+          7.25,
+          7.25,
+          8.875,
+          8.875,
+          8.875,
+          9,
+          9,
+          9,
+          11.625,
+          11.625,
+          11.625,
+          12,
+          12,
+          12,
+          12.125,
+          12.125,
+          12.25,
+          12.25,
+          15.375,
+          15.625,
+          15.625,
+          15.75,
+          15.75,
+          15.875,
+          15.875,
+          16,
+          16,
+          16.875,
+          16.875,
+          18.75,
+          19,
+          19,
+          19,
+          19,
+          19,
+          20.5,
+          22.125,
+          22.25,
+          22.25,
+          22.25,
+          22.25,
+          22.25,
+          22.25,
+          22.25,
+          22.25,
+          22.25,
+          22.875,
+          23.5,
+          26.125,
+          26.125,
+          26.25,
+          26.25,
+          26.875
+        ],
+        "fontPx": 17.61,
+        "floorPx": 28,
+        "seconds": 2.375,
+        "elements": [
+          {
+            "selector": "div.tag.ok",
+            "text": "Al día",
+            "fontPx": 17.61,
+            "time": 22.25,
+            "seconds": 2.375
+          },
+          {
+            "selector": "div.tag.late",
+            "text": "Mora 3d",
+            "fontPx": 17.76,
+            "time": 11.625,
+            "seconds": 3.375
+          },
+          {
+            "selector": "div.chart-labels > span:nth-of-type(1)",
+            "text": "L",
+            "fontPx": 17.83,
+            "time": 7.25,
+            "seconds": 4
+          },
+          {
+            "selector": "div.chart-labels > span:nth-of-type(2)",
+            "text": "M",
+            "fontPx": 17.83,
+            "time": 7.25,
+            "seconds": 4
+          },
+          {
+            "selector": "div.chart-labels > span:nth-of-type(3)",
+            "text": "M",
+            "fontPx": 17.83,
+            "time": 7.25,
+            "seconds": 4
+          },
+          {
+            "selector": "div.chart-labels > span:nth-of-type(4)",
+            "text": "J",
+            "fontPx": 17.83,
+            "time": 7.25,
+            "seconds": 4
+          },
+          {
+            "selector": "div.chart-labels > span:nth-of-type(5)",
+            "text": "V",
+            "fontPx": 17.83,
+            "time": 7.25,
+            "seconds": 4
+          },
+          {
+            "selector": "div.chart-labels > span:nth-of-type(6)",
+            "text": "S",
+            "fontPx": 17.83,
+            "time": 7.25,
+            "seconds": 4
+          },
+          {
+            "selector": "div.chart-labels > span:nth-of-type(7)",
+            "text": "D",
+            "fontPx": 17.83,
+            "time": 7.25,
+            "seconds": 4
+          },
+          {
+            "selector": "span.tag.late",
+            "text": "Mora 3d",
+            "fontPx": 18,
+            "time": 8.875,
+            "seconds": 2.375
+          },
+          {
+            "selector": "span.tag.ok",
+            "text": "Al día",
+            "fontPx": 18,
+            "time": 9,
+            "seconds": 2.25
+          },
+          {
+            "selector": "#phone7 > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2)",
+            "text": "Hola, Juan 👋",
+            "fontPx": 19.57,
+            "time": 22.25,
+            "seconds": 2.375
+          },
+          {
+            "selector": "#phone7 > div:nth-of-type(2) > div:nth-of-type(2)",
+            "text": "Saldo total",
+            "fontPx": 19.57,
+            "time": 22.25,
+            "seconds": 2.375
+          },
+          {
+            "selector": "#phone4 > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2)",
+            "text": "Préstamo #1043 · quincenal",
+            "fontPx": 19.74,
+            "time": 11.625,
+            "seconds": 3.375
+          },
+          {
+            "selector": "#phone4 > div:nth-of-type(2) > div:nth-of-type(2)",
+            "text": "Saldo pendiente",
+            "fontPx": 19.74,
+            "time": 11.625,
+            "seconds": 3.375
+          },
+          {
+            "selector": "div.live",
+            "text": "En vivo",
+            "fontPx": 19.81,
+            "time": 7.25,
+            "seconds": 4
+          },
+          {
+            "selector": "div.kpis > div:nth-of-type(1) > div:nth-of-type(1)",
+            "text": "Cartera activa",
+            "fontPx": 19.81,
+            "time": 7.25,
+            "seconds": 4
+          },
+          {
+            "selector": "div.kpis > div:nth-of-type(2) > div:nth-of-type(1)",
+            "text": "Recaudo de hoy",
+            "fontPx": 19.81,
+            "time": 7.25,
+            "seconds": 4
+          },
+          {
+            "selector": "div.kpis > div:nth-of-type(3) > div:nth-of-type(1)",
+            "text": "Mora",
+            "fontPx": 19.81,
+            "time": 7.25,
+            "seconds": 4
+          },
+          {
+            "selector": "div.kpis > div:nth-of-type(4) > div:nth-of-type(1)",
+            "text": "Clientes",
+            "fontPx": 19.81,
+            "time": 7.25,
+            "seconds": 4
+          },
+          {
+            "selector": "div.bubble",
+            "text": "Hola Juan, tu cuota vence hoy 👋",
+            "fontPx": 19.85,
+            "time": 16.875,
+            "seconds": 1.5
+          },
+          {
+            "selector": "div.qrow.active > div:nth-of-type(2) > div:nth-of-type(2)",
+            "text": "Venció hace 3 días · 2 cuotas",
+            "fontPx": 19.98,
+            "time": 15.625,
+            "seconds": 2.75
+          },
+          {
+            "selector": "#queue > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2)",
+            "text": "Vence hoy",
+            "fontPx": 19.99,
+            "time": 15.75,
+            "seconds": 2.625
+          },
+          {
+            "selector": "#queue > div:nth-of-type(3) > div:nth-of-type(2) > div:nth-of-type(2)",
+            "text": "Prometió pagar el viernes",
+            "fontPx": 19.99,
+            "time": 15.875,
+            "seconds": 2.5
+          },
+          {
+            "selector": "#queue > div:nth-of-type(4) > div:nth-of-type(2) > div:nth-of-type(2)",
+            "text": "Al día · próxima cuota 21 nov",
+            "fontPx": 20,
+            "time": 16,
+            "seconds": 2.375
+          },
+          {
+            "selector": "div.kpis > div:nth-of-type(1) > div:nth-of-type(3)",
+            "text": "+12,4% este mes",
+            "fontPx": 20.8,
+            "time": 7.25,
+            "seconds": 4
+          },
+          {
+            "selector": "div.kpis > div:nth-of-type(2) > div:nth-of-type(3)",
+            "text": "18 pagos registrados",
+            "fontPx": 20.8,
+            "time": 7.25,
+            "seconds": 4
+          },
+          {
+            "selector": "div.kpis > div:nth-of-type(3) > div:nth-of-type(3)",
+            "text": "3 casos en gestión",
+            "fontPx": 20.8,
+            "time": 7.25,
+            "seconds": 4
+          },
+          {
+            "selector": "div.kpis > div:nth-of-type(4) > div:nth-of-type(3)",
+            "text": "6 cobradores",
+            "fontPx": 20.8,
+            "time": 7.25,
+            "seconds": 4
+          },
+          {
+            "selector": "#t1 > small:nth-of-type(1)",
+            "text": "25 clientes, 3 hojas",
+            "fontPx": 21,
+            "time": 3.75,
+            "seconds": 3.25
+          },
+          {
+            "selector": "#t2 > small:nth-of-type(1)",
+            "text": "versión final_v7",
+            "fontPx": 21,
+            "time": 3.875,
+            "seconds": 3.125
+          },
+          {
+            "selector": "#t3 > small:nth-of-type(1)",
+            "text": "“te pago el viernes”",
+            "fontPx": 21,
+            "time": 4,
+            "seconds": 3
+          },
+          {
+            "selector": "#t4 > small:nth-of-type(1)",
+            "text": "sin conciliar",
+            "fontPx": 21,
+            "time": 4.125,
+            "seconds": 2.875
+          },
+          {
+            "selector": "#t5 > small:nth-of-type(1)",
+            "text": "plata que se pierde",
+            "fontPx": 21,
+            "time": 4.25,
+            "seconds": 2.75
+          },
+          {
+            "selector": "#badges > span:nth-of-type(1)",
+            "text": "Cobranza",
+            "fontPx": 21,
+            "time": 26.125,
+            "seconds": 2.375
+          },
+          {
+            "selector": "#badges > span:nth-of-type(2)",
+            "text": "Caja",
+            "fontPx": 21,
+            "time": 26.125,
+            "seconds": 2.375
+          },
+          {
+            "selector": "#badges > span:nth-of-type(3)",
+            "text": "Reportes",
+            "fontPx": 21,
+            "time": 26.25,
+            "seconds": 2.25
+          },
+          {
+            "selector": "#badges > span:nth-of-type(4)",
+            "text": "Portal del cliente",
+            "fontPx": 21,
+            "time": 26.25,
+            "seconds": 2.25
+          },
+          {
+            "selector": "#phone7 > div:nth-of-type(2) > div:nth-of-type(4) > div:nth-of-type(1) > span:nth-of-type(1)",
+            "text": "Próxima cuota",
+            "fontPx": 22.5,
+            "time": 22.25,
+            "seconds": 2.375
+          },
+          {
+            "selector": "#phone7 > div:nth-of-type(2) > div:nth-of-type(4) > div:nth-of-type(1) > b:nth-of-type(1)",
+            "text": "02 dic",
+            "fontPx": 22.5,
+            "time": 22.25,
+            "seconds": 2.375
+          },
+          {
+            "selector": "#phone7 > div:nth-of-type(2) > div:nth-of-type(4) > div:nth-of-type(2) > span:nth-of-type(1)",
+            "text": "Valor cuota",
+            "fontPx": 22.5,
+            "time": 22.25,
+            "seconds": 2.375
+          },
+          {
+            "selector": "#phone7 > div:nth-of-type(2) > div:nth-of-type(4) > div:nth-of-type(2) > b:nth-of-type(1)",
+            "text": "$250.000",
+            "fontPx": 22.5,
+            "time": 22.25,
+            "seconds": 2.375
+          },
+          {
+            "selector": "#phone7 > div:nth-of-type(2) > div:nth-of-type(4) > div:nth-of-type(3) > span:nth-of-type(1)",
+            "text": "Canales de pago",
+            "fontPx": 22.5,
+            "time": 22.25,
+            "seconds": 2.375
+          },
+          {
+            "selector": "#phone7 > div:nth-of-type(2) > div:nth-of-type(4) > div:nth-of-type(3) > b:nth-of-type(1)",
+            "text": "Nequi · Banco",
+            "fontPx": 22.5,
+            "time": 22.25,
+            "seconds": 2.375
+          },
+          {
+            "selector": "#i1 > span:nth-of-type(1)",
+            "text": "Cuota 3 · 18 nov",
+            "fontPx": 22.93,
+            "time": 12,
+            "seconds": 3
+          },
+          {
+            "selector": "#i1 > b:nth-of-type(1)",
+            "text": "$250.000",
+            "fontPx": 22.93,
+            "time": 12,
+            "seconds": 3
+          },
+          {
+            "selector": "#i2 > span:nth-of-type(1)",
+            "text": "Cuota 4 · 02 dic",
+            "fontPx": 22.93,
+            "time": 12.125,
+            "seconds": 2.875
+          },
+          {
+            "selector": "#i2 > b:nth-of-type(1)",
+            "text": "$250.000",
+            "fontPx": 22.93,
+            "time": 12.125,
+            "seconds": 2.875
+          },
+          {
+            "selector": "#i3 > span:nth-of-type(1)",
+            "text": "Cuota 5 · 17 dic",
+            "fontPx": 22.93,
+            "time": 12.25,
+            "seconds": 2.75
+          },
+          {
+            "selector": "#i3 > b:nth-of-type(1)",
+            "text": "$250.000",
+            "fontPx": 22.93,
+            "time": 12.25,
+            "seconds": 2.75
+          },
+          {
+            "selector": "div.qrow.active > div:nth-of-type(1)",
+            "text": "JY",
+            "fontPx": 23.97,
+            "time": 15.625,
+            "seconds": 2.75
+          },
+          {
+            "selector": "#queue > div:nth-of-type(2) > div:nth-of-type(1)",
+            "text": "JP",
+            "fontPx": 23.98,
+            "time": 15.75,
+            "seconds": 2.625
+          },
+          {
+            "selector": "#queue > div:nth-of-type(3) > div:nth-of-type(1)",
+            "text": "MR",
+            "fontPx": 23.99,
+            "time": 15.875,
+            "seconds": 2.5
+          },
+          {
+            "selector": "div.rowlist > div:nth-of-type(1) > span:nth-of-type(1)",
+            "text": "Juan Yasser",
+            "fontPx": 24,
+            "time": 8.875,
+            "seconds": 2.375
+          },
+          {
+            "selector": "div.rowlist > div:nth-of-type(1) > b:nth-of-type(1)",
+            "text": "$450.000",
+            "fontPx": 24,
+            "time": 8.875,
+            "seconds": 2.375
+          },
+          {
+            "selector": "div.rowlist > div:nth-of-type(2) > span:nth-of-type(1)",
+            "text": "José Pere",
+            "fontPx": 24,
+            "time": 9,
+            "seconds": 2.25
+          },
+          {
+            "selector": "div.rowlist > div:nth-of-type(2) > b:nth-of-type(1)",
+            "text": "$300.000",
+            "fontPx": 24,
+            "time": 9,
+            "seconds": 2.25
+          },
+          {
+            "selector": "#queue > div:nth-of-type(4) > div:nth-of-type(1)",
+            "text": "CD",
+            "fontPx": 24,
+            "time": 16,
+            "seconds": 2.375
+          },
+          {
+            "selector": "#url",
+            "text": "site-4a5449d5b57540ec884ea1f16a51c5d8.freebuff.page",
+            "fontPx": 24,
+            "time": 26.875,
+            "seconds": 1.625
+          },
+          {
+            "selector": "#sol",
+            "text": "Solicitud aprobada · $995.956",
+            "fontPx": 24.95,
+            "time": 22.875,
+            "seconds": 1.75
+          },
+          {
+            "selector": "#google",
+            "text": "Entra con Google",
+            "fontPx": 25,
+            "time": 23.5,
+            "seconds": 1.125
+          },
+          {
+            "selector": "#wa > div:nth-of-type(1) > div:nth-of-type(1)",
+            "text": "Recordatorio enviado",
+            "fontPx": 25.81,
+            "time": 16.875,
+            "seconds": 1.5
+          },
+          {
+            "selector": "#cashcard > div:nth-of-type(1) > span:nth-of-type(1)",
+            "text": "Fondo inicial",
+            "fontPx": 26.79,
+            "time": 19,
+            "seconds": 2.625
+          },
+          {
+            "selector": "#cashcard > div:nth-of-type(2) > span:nth-of-type(1)",
+            "text": "Recaudado del turno",
+            "fontPx": 26.79,
+            "time": 19,
+            "seconds": 2.625
+          },
+          {
+            "selector": "#cashcard > div:nth-of-type(3) > span:nth-of-type(1)",
+            "text": "Esperado en caja",
+            "fontPx": 26.79,
+            "time": 19,
+            "seconds": 2.625
+          },
+          {
+            "selector": "#cashcard > div:nth-of-type(4) > span:nth-of-type(1)",
+            "text": "Contado",
+            "fontPx": 26.79,
+            "time": 19,
+            "seconds": 2.625
+          },
+          {
+            "selector": "#cashcard > div:nth-of-type(5) > span:nth-of-type(1)",
+            "text": "Diferencia",
+            "fontPx": 26.79,
+            "time": 19,
+            "seconds": 2.625
+          },
+          {
+            "selector": "#s4-kicker",
+            "text": "Sin calculadora · sin cuaderno",
+            "fontPx": 26.91,
+            "time": 12,
+            "seconds": 3
+          },
+          {
+            "selector": "#s1-kicker",
+            "text": "Cartera de préstamos",
+            "fontPx": 27,
+            "time": 0.25,
+            "seconds": 3
+          },
+          {
+            "selector": "#s2-kicker",
+            "text": "El problema real",
+            "fontPx": 27,
+            "time": 3.5,
+            "seconds": 3.5
+          },
+          {
+            "selector": "#s5-kicker",
+            "text": "Cobranza del día",
+            "fontPx": 27,
+            "time": 15.375,
+            "seconds": 3
+          },
+          {
+            "selector": "#s6-kicker",
+            "text": "Caja y tesorería",
+            "fontPx": 27,
+            "time": 18.75,
+            "seconds": 2.875
+          },
+          {
+            "selector": "#csv",
+            "text": "Reportes listos para Excel",
+            "fontPx": 27,
+            "time": 20.5,
+            "seconds": 1.125
+          },
+          {
+            "selector": "#s7-kicker",
+            "text": "Portal del cliente",
+            "fontPx": 27,
+            "time": 22.125,
+            "seconds": 2.5
+          }
+        ]
+      }
+    ],
+    "enabled": true,
+    "step": 0.125,
+    "samples": 228
+  },
+  "audio": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": []
+  },
+  "hdr": {
+    "autoPromotion": null,
+    "inspection": "available"
+  },
+  "snapshots": {
+    "enabled": false,
+    "files": [],
+    "times": [],
+    "findingFiles": []
+  }
+}

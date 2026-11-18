@@ -1,0 +1,26 @@
+// Prueba local del sitio de producción: Worker + D1 local + login de desarrollo.
+// La compilación se genera con `npm run build:sites`.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "dineroya-sites",
+  "main": "freebuff-sites-build/worker.js",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./freebuff-sites-build/assets",
+    "binding": "ASSETS",
+    "run_worker_first": true,
+    "not_found_handling": "single-page-application"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "dineroya-local",
+      "database_id": "00000000-0000-0000-0000-000000000000"
+    }
+  ],
+  "vars": {
+    "FREEBUFF_CLIENT_ID": "d9cb3083-518d-40c5-b898-6ab74441a312",
+    "FREEBUFF_ISSUER": "https://freebuff.com/oidc",
+    "APP_ORIGIN": "http://localhost:8787"
+  }
+}

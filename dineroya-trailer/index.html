@@ -1,0 +1,679 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+    <style>
+      :root {
+        --ground: #05070f;
+        --ink: #f8fafc;
+        --muted: #94a3b8;
+        --line: rgba(148, 163, 184, 0.16);
+        --indigo: #6366f1;
+        --indigo-soft: #818cf8;
+        --cyan: #22d3ee;
+        --emerald: #34d399;
+        --amber: #fbbf24;
+        --rose: #fb7185;
+        --font: Inter, Arial, Helvetica, sans-serif;
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body {
+        width: 1080px; height: 1920px; overflow: hidden;
+        background: var(--ground); color: var(--ink);
+        font-family: var(--font); -webkit-font-smoothing: antialiased;
+      }
+      #root { position: relative; width: 1080px; height: 1920px; overflow: hidden; }
+
+      .bg {
+        position: absolute; inset: 0;
+        background:
+          radial-gradient(120% 80% at 50% -10%, #131a3a 0%, #080b18 45%, #05070f 100%);
+      }
+      .bg-glow {
+        position: absolute; width: 1400px; height: 1400px; left: -160px; top: 280px;
+        background: radial-gradient(circle, rgba(99, 102, 241, 0.32) 0%, rgba(99, 102, 241, 0) 62%);
+        filter: blur(10px);
+      }
+      .grid {
+        position: absolute; inset: 0;
+        background-image:
+          linear-gradient(to right, var(--line) 1px, transparent 1px),
+          linear-gradient(to bottom, var(--line) 1px, transparent 1px);
+        background-size: 90px 90px;
+        mask-image: radial-gradient(80% 60% at 50% 45%, #000 20%, transparent 78%);
+        opacity: 0.55;
+      }
+      .scan {
+        position: absolute; inset: 0; pointer-events: none; opacity: 0.22;
+        background: repeating-linear-gradient(to bottom, rgba(255,255,255,0.05) 0 1px, transparent 1px 4px);
+        mix-blend-mode: overlay;
+      }
+      .vignette {
+        position: absolute; inset: 0; pointer-events: none;
+        background: radial-gradient(120% 90% at 50% 50%, transparent 45%, rgba(0,0,0,0.72) 100%);
+      }
+      #flash { position: absolute; inset: 0; background: #dbe4ff; opacity: 0; pointer-events: none; }
+      #stage { position: absolute; inset: 0; transform-origin: 50% 50%; }
+      .scene { position: absolute; inset: 0; padding: 96px 76px; }
+      .clip { position: absolute; inset: 0; }
+
+      /* ---------- tipografía ---------- */
+      .kicker {
+        font-size: 27px; font-weight: 800; letter-spacing: 0.34em; text-transform: uppercase;
+        color: var(--indigo-soft);
+      }
+      .huge {
+        font-size: 148px; line-height: 0.9; font-weight: 900; letter-spacing: -0.055em;
+        text-transform: uppercase;
+      }
+      .big {
+        font-size: 96px; line-height: 0.94; font-weight: 900; letter-spacing: -0.045em;
+        text-transform: uppercase;
+      }
+      .sub { font-size: 36px; line-height: 1.3; font-weight: 500; color: var(--muted); }
+      .micro { font-size: 24px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
+      .grad-indigo { background: linear-gradient(100deg, #c7d2fe 0%, #818cf8 45%, #22d3ee 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+      .grad-emerald { background: linear-gradient(100deg, #a7f3d0 0%, #34d399 55%, #22d3ee 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+      .grad-rose { background: linear-gradient(100deg, #fecdd3 0%, #fb7185 60%, #f43f5e 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+      .pill {
+        display: inline-flex; align-items: center; gap: 12px;
+        padding: 14px 26px; border-radius: 999px; font-size: 24px; font-weight: 800;
+        letter-spacing: 0.08em; text-transform: uppercase;
+        background: rgba(99, 102, 241, 0.16); border: 1px solid rgba(129, 140, 248, 0.45);
+        color: #c7d2fe;
+      }
+      .dot { width: 12px; height: 12px; border-radius: 999px; background: currentColor; }
+
+      .card {
+        background: linear-gradient(160deg, rgba(23, 30, 58, 0.96), rgba(11, 15, 30, 0.98));
+        border: 1px solid rgba(129, 140, 248, 0.22);
+        border-radius: 44px;
+        box-shadow: 0 50px 90px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255,255,255,0.07);
+      }
+
+      /* ---------- escena 1 ---------- */
+      #s1 .wrap { position: absolute; left: 76px; right: 76px; top: 470px; }
+      #s1 .line { overflow: hidden; }
+      #s1 .ghost {
+        position: absolute; left: 62px; top: 452px; font-size: 148px; font-weight: 900;
+        letter-spacing: -0.055em; line-height: 0.9; text-transform: uppercase;
+        color: transparent; -webkit-text-stroke: 2px rgba(251, 113, 133, 0.5);
+      }
+      #s1 .strike {
+        position: absolute; left: 74px; top: 760px; height: 8px; width: 0px;
+        background: linear-gradient(90deg, var(--rose), #f43f5e); border-radius: 8px;
+      }
+      #s1 .amount {
+        position: absolute; left: 78px; top: 300px; font-size: 74px; font-weight: 900;
+        letter-spacing: -0.03em; color: rgba(248, 250, 252, 0.9);
+        font-variant-numeric: tabular-nums;
+      }
+      #s1 .hint { position: absolute; left: 78px; bottom: 190px; right: 120px; }
+
+      /* ---------- escena 2 ---------- */
+      #s2 .title { position: absolute; left: 76px; right: 76px; top: 170px; }
+      .chaos { position: absolute; inset: 0; }
+      .chaos .tile {
+        position: absolute; padding: 26px 30px; border-radius: 26px;
+        background: rgba(17, 23, 44, 0.94); border: 1px solid rgba(148, 163, 184, 0.22);
+        font-size: 30px; font-weight: 800; letter-spacing: -0.01em;
+        box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5); white-space: nowrap;
+      }
+      .chaos .tile small { display: block; margin-top: 8px; font-size: 21px; font-weight: 600; color: var(--muted); letter-spacing: 0; }
+      .chaos .bad { border-color: rgba(251, 113, 133, 0.55); box-shadow: 0 30px 70px rgba(244, 63, 94, 0.3); }
+      #s2 .footer { position: absolute; left: 76px; right: 76px; bottom: 170px; }
+
+      /* ---------- escena 3 · dashboard ---------- */
+      #s3 { perspective: 1400px; }
+      #s3 .dash {
+        position: absolute; left: 54px; right: 54px; top: 210px; padding: 44px 40px 40px;
+        transform-style: preserve-3d;
+      }
+      .dash-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 26px; }
+      .dash-title { font-size: 44px; font-weight: 900; letter-spacing: -0.03em; }
+      .live { display: inline-flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 800; letter-spacing: 0.2em; color: var(--emerald); text-transform: uppercase; }
+      .kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+      .kpi {
+        border-radius: 28px; padding: 26px 26px 24px;
+        background: rgba(99, 102, 241, 0.09); border: 1px solid rgba(129, 140, 248, 0.2);
+      }
+      .kpi .label { font-size: 20px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
+      .kpi .value { font-size: 62px; font-weight: 900; letter-spacing: -0.04em; margin-top: 8px; font-variant-numeric: tabular-nums; }
+      .kpi .delta { font-size: 21px; font-weight: 700; margin-top: 6px; }
+      .chart { margin-top: 26px; display: flex; align-items: flex-end; gap: 14px; height: 210px; }
+      .bar { flex: 1; height: 50%; border-radius: 12px 12px 4px 4px; background: linear-gradient(180deg, #818cf8, #4f46e5); transform-origin: bottom; }
+      #dash-chart .bar:nth-child(1) { height: 45%; }
+      #dash-chart .bar:nth-child(2) { height: 62%; }
+      #dash-chart .bar:nth-child(3) { height: 38%; }
+      #dash-chart .bar:nth-child(4) { height: 78%; }
+      #dash-chart .bar:nth-child(5) { height: 58%; }
+      #dash-chart .bar:nth-child(6) { height: 92%; }
+      #dash-chart .bar:nth-child(7) { height: 70%; }
+      #mini-chart .bar:nth-child(1) { height: 35%; }
+      #mini-chart .bar:nth-child(2) { height: 55%; }
+      #mini-chart .bar:nth-child(3) { height: 42%; }
+      #mini-chart .bar:nth-child(4) { height: 72%; }
+      #mini-chart .bar:nth-child(5) { height: 60%; }
+      #mini-chart .bar:nth-child(6) { height: 88%; }
+      .chart-labels { display: flex; gap: 14px; margin-top: 12px; }
+      .chart-labels span { flex: 1; text-align: center; font-size: 18px; font-weight: 700; color: var(--muted); }
+      .rowlist { margin-top: 22px; display: flex; flex-direction: column; gap: 12px; }
+      .rowline {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 16px 20px; border-radius: 18px; background: rgba(148, 163, 184, 0.07);
+        font-size: 24px; font-weight: 700; color: #cbd5e1;
+      }
+      .rowline b { font-variant-numeric: tabular-nums; }
+      .tag { font-size: 18px; font-weight: 900; letter-spacing: 0.1em; padding: 8px 14px; border-radius: 999px; text-transform: uppercase; }
+      .tag.ok { background: rgba(52, 211, 153, 0.16); color: #6ee7b7; }
+      .tag.late { background: rgba(251, 113, 133, 0.16); color: #fda4af; }
+
+      /* ---------- escena 4 · pago ---------- */
+      .phone {
+        position: absolute; left: 50%; margin-left: -268px; width: 536px; height: 1080px;
+        border-radius: 62px; padding: 18px;
+        background: linear-gradient(160deg, #1b2342, #0a0f22);
+        border: 1px solid rgba(148, 163, 184, 0.28);
+        box-shadow: 0 60px 120px rgba(0, 0, 0, 0.65);
+      }
+      .screen {
+        width: 100%; height: 100%; border-radius: 48px; padding: 34px 26px;
+        background: linear-gradient(180deg, #0b1022, #070a16);
+        border: 1px solid rgba(99, 102, 241, 0.18); overflow: hidden;
+      }
+      .notch {
+        position: absolute; left: 50%; top: 30px; width: 150px; height: 26px; margin-left: -75px;
+        border-radius: 999px; background: #05070f;
+      }
+      .ph-head { display: flex; align-items: center; justify-content: space-between; margin-top: 26px; }
+      .ph-name { font-size: 30px; font-weight: 900; }
+      .ph-sub { font-size: 20px; color: var(--muted); font-weight: 600; margin-top: 4px; }
+      .ph-amount { margin-top: 34px; font-size: 78px; font-weight: 900; letter-spacing: -0.045em; font-variant-numeric: tabular-nums; }
+      .ph-label { font-size: 20px; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); }
+      .inst { margin-top: 26px; display: flex; flex-direction: column; gap: 12px; }
+      .inst-row { display: flex; justify-content: space-between; align-items: center; padding: 18px 20px; border-radius: 18px; background: rgba(148, 163, 184, 0.07); font-size: 23px; font-weight: 700; }
+      .inst-row.paid { background: rgba(52, 211, 153, 0.12); color: #a7f3d0; }
+      .paybtn {
+        position: absolute; left: 26px; right: 26px; bottom: 34px; height: 118px; border-radius: 30px;
+        display: flex; align-items: center; justify-content: center; gap: 14px;
+        background: linear-gradient(100deg, #4f46e5, #6366f1 55%, #22d3ee);
+        font-size: 31px; font-weight: 900; letter-spacing: 0.02em;
+        box-shadow: 0 26px 60px rgba(79, 70, 229, 0.55);
+      }
+      .ripple {
+        position: absolute; width: 120px; height: 120px; border-radius: 999px;
+        border: 3px solid rgba(199, 210, 254, 0.85); opacity: 0;
+      }
+      .coin { position: absolute; width: 26px; height: 26px; border-radius: 999px; background: linear-gradient(160deg, #fde68a, #f59e0b); box-shadow: 0 0 24px rgba(245, 158, 11, 0.7); opacity: 0; }
+      .done {
+        position: absolute; left: 50%; top: 790px; transform: translateX(-50%);
+        display: flex; align-items: center; gap: 14px; padding: 20px 34px; border-radius: 999px;
+        background: rgba(52, 211, 153, 0.16); border: 1px solid rgba(52, 211, 153, 0.5);
+        color: #a7f3d0; font-size: 30px; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase;
+        opacity: 0;
+      }
+      #s4 .phone { top: 130px; }
+      #s4 .sidetext { position: absolute; left: 76px; right: 76px; bottom: 132px; text-align: center; }
+
+      /* ---------- escena 5 ---------- */
+      #s5 .head { position: absolute; left: 76px; right: 76px; top: 150px; }
+      .queue { position: absolute; left: 70px; right: 70px; top: 520px; display: flex; flex-direction: column; gap: 18px; }
+      .qrow {
+        display: flex; align-items: center; gap: 22px; padding: 26px 26px;
+        border-radius: 26px; background: rgba(23, 30, 58, 0.9);
+        border: 1px solid rgba(148, 163, 184, 0.16);
+      }
+      .qrow.active { border-color: rgba(251, 113, 133, 0.55); background: rgba(69, 10, 28, 0.5); }
+      .avatar { width: 62px; height: 62px; border-radius: 18px; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 900; background: rgba(99, 102, 241, 0.25); color: #c7d2fe; }
+      .qmeta { flex: 1; min-width: 0; }
+      .qname { font-size: 28px; font-weight: 800; }
+      .qinfo { font-size: 20px; color: var(--muted); font-weight: 600; margin-top: 4px; }
+      .qamt { font-size: 30px; font-weight: 900; font-variant-numeric: tabular-nums; }
+      .wa {
+        position: absolute; right: 72px; bottom: 230px; display: flex; align-items: center; gap: 16px;
+        padding: 22px 28px; border-radius: 26px; font-size: 26px; font-weight: 800;
+        background: rgba(37, 211, 102, 0.14); border: 1px solid rgba(37, 211, 102, 0.45); color: #86efac;
+        opacity: 0;
+      }
+      .wa .bubble { font-size: 20px; font-weight: 600; color: #d1fae5; }
+
+      /* ---------- escena 6 ---------- */
+      #s6 .head { position: absolute; left: 76px; right: 76px; top: 160px; }
+      .cashcard { position: absolute; left: 70px; right: 70px; top: 420px; padding: 40px 36px; }
+      .cashline { display: flex; justify-content: space-between; align-items: center; padding: 18px 0; border-bottom: 1px dashed rgba(148, 163, 184, 0.22); font-size: 27px; font-weight: 700; color: #cbd5e1; }
+      .cashline:last-child { border-bottom: 0; }
+      .cashline b { font-size: 33px; font-variant-numeric: tabular-nums; }
+      .zero { color: #6ee7b7; font-weight: 900; }
+      .csv { position: absolute; right: 76px; bottom: 900px; display: inline-flex; align-items: center; gap: 12px; padding: 20px 28px; border-radius: 22px; font-size: 27px; font-weight: 900; background: rgba(8, 47, 73, 0.92); border: 1px solid rgba(34, 211, 238, 0.6); color: #cffafe; opacity: 0; }
+      .mini-chart { position: absolute; left: 70px; right: 70px; bottom: 600px; height: 200px; display: flex; align-items: flex-end; gap: 12px; }
+      .mini-chart .bar { background: linear-gradient(180deg, #22d3ee, #0891b2); }
+
+      /* ---------- escena 7 ---------- */
+      #s7 .head { position: absolute; left: 76px; right: 76px; top: 140px; }
+      #s7 .phone { top: 420px; height: 900px; }
+      .sol { position: absolute; left: 50%; transform: translateX(-50%); top: 1370px; display: flex; align-items: center; gap: 14px; padding: 20px 30px; border-radius: 999px; background: rgba(52, 211, 153, 0.16); border: 1px solid rgba(52, 211, 153, 0.5); color: #a7f3d0; font-size: 26px; font-weight: 900; opacity: 0; }
+      .google { position: absolute; left: 50%; transform: translateX(-50%); top: 1500px; display: flex; align-items: center; gap: 16px; padding: 20px 30px; border-radius: 22px; background: rgba(248, 250, 252, 0.95); color: #0f172a; font-size: 25px; font-weight: 800; opacity: 0; }
+      .gicon { width: 34px; height: 34px; border-radius: 999px; background: conic-gradient(from 45deg, #ea4335, #fbbc05, #34a853, #4285f4, #ea4335); }
+
+      /* ---------- escena 8 ---------- */
+      #s8 .center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px; }
+      .logo-mark { width: 190px; height: 190px; border-radius: 54px; background: linear-gradient(150deg, #6366f1, #4f46e5 60%, #0ea5e9); display: flex; align-items: center; justify-content: center; box-shadow: 0 40px 90px rgba(79, 70, 229, 0.55); }
+      .logo-mark svg { width: 108px; height: 108px; }
+      .wordmark { font-size: 132px; font-weight: 900; letter-spacing: -0.05em; }
+      .tagline { font-size: 42px; font-weight: 700; color: #c7d2fe; text-align: center; }
+      .cta { margin-top: 34px; display: inline-flex; align-items: center; gap: 16px; padding: 26px 46px; border-radius: 999px; font-size: 32px; font-weight: 900; letter-spacing: 0.04em; background: linear-gradient(100deg, #4f46e5, #6366f1 55%, #22d3ee); box-shadow: 0 30px 70px rgba(79, 70, 229, 0.5); }
+      .url { position: absolute; bottom: 120px; left: 0; right: 0; text-align: center; font-size: 24px; font-weight: 700; color: rgba(148, 163, 184, 0.85); letter-spacing: 0.03em; }
+      .badges { display: flex; gap: 14px; margin-top: 10px; }
+      .badge { font-size: 21px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; padding: 12px 20px; border-radius: 999px; border: 1px solid rgba(148, 163, 184, 0.28); color: #cbd5e1; }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="28.5"
+      data-width="1080"
+      data-height="1920"
+      data-fps="30"
+    >
+      <div class="bg" data-layout-allow-occlusion></div>
+      <div class="bg-glow" id="glow" data-layout-allow-occlusion></div>
+      <div class="grid" id="grid" data-layout-allow-occlusion></div>
+
+      <div id="stage">
+        <!-- 1 · GANCHO -->
+        <section class="clip" id="s1" data-start="0" data-duration="3.2">
+          <div class="kicker" id="s1-kicker">Cartera de préstamos</div>
+          <div class="amount" id="s1-amount">$ 4.730.000</div>
+          <div class="ghost" id="s1-ghost">TE DEBEN</div>
+          <div class="wrap">
+            <div class="line"><div class="huge" id="s1-a">¿CUÁNTO</div></div>
+            <div class="line"><div class="huge grad-indigo" id="s1-b">TE DEBEN?</div></div>
+          </div>
+          <div class="strike" id="s1-strike"></div>
+          <p class="sub hint" id="s1-hint">Y cuánto de eso <b style="color:#fda4af">nunca vas a volver a ver</b>.</p>
+        </section>
+
+        <!-- 2 · CAOS -->
+        <section class="clip" id="s2" data-start="3.2" data-duration="3.8">
+          <div class="title">
+            <div class="kicker" id="s2-kicker">El problema real</div>
+            <div class="big" id="s2-title" style="margin-top:18px">Todo tu negocio<br /><span class="grad-rose">en pedazos</span></div>
+          </div>
+          <div class="chaos">
+            <div class="tile" id="t1" style="left:70px; top:700px; transform:rotate(-6deg)">Cuaderno<small>25 clientes, 3 hojas</small></div>
+            <div class="tile" id="t2" style="right:60px; top:840px; transform:rotate(4deg)">Excel<small>versión final_v7</small></div>
+            <div class="tile" id="t3" style="left:110px; top:1010px; transform:rotate(3deg)">WhatsApp<small>“te pago el viernes”</small></div>
+            <div class="tile" id="t4" style="right:80px; top:1160px; transform:rotate(-5deg)">Fotos de comprobantes<small>sin conciliar</small></div>
+            <div class="tile bad" id="t5" style="left:70px; top:1330px; transform:rotate(2deg)">Morosos sin seguimiento<small>plata que se pierde</small></div>
+          </div>
+          <div class="footer">
+            <p class="sub" id="s2-foot">Cada semana se te escapan cuotas, abonos y promesas de pago.</p>
+          </div>
+        </section>
+
+        <!-- 3 · PRODUCTO -->
+        <section class="clip" id="s3" data-start="7" data-duration="4.4">
+          <div class="dash card" id="dash">
+            <div class="dash-head">
+              <div class="dash-title">Resumen Global</div>
+              <div class="live"><span class="dot"></span> En vivo</div>
+            </div>
+            <div class="kpis">
+              <div class="kpi">
+                <div class="label">Cartera activa</div>
+                <div class="value grad-indigo" id="kpi-cartera">$0M</div>
+                <div class="delta" style="color:#6ee7b7">+12,4% este mes</div>
+              </div>
+              <div class="kpi">
+                <div class="label">Recaudo de hoy</div>
+                <div class="value grad-emerald" id="kpi-recaudo">$0M</div>
+                <div class="delta" style="color:#a5f3fc">18 pagos registrados</div>
+              </div>
+              <div class="kpi">
+                <div class="label">Mora</div>
+                <div class="value" id="kpi-mora" style="color:#fda4af">0%</div>
+                <div class="delta" style="color:#94a3b8">3 casos en gestión</div>
+              </div>
+              <div class="kpi">
+                <div class="label">Clientes</div>
+                <div class="value" id="kpi-clientes" style="color:#e0e7ff">0</div>
+                <div class="delta" style="color:#94a3b8">6 cobradores</div>
+              </div>
+            </div>
+            <div class="chart" id="dash-chart">
+              <div class="bar" data-h="0.45"></div><div class="bar" data-h="0.62"></div>
+              <div class="bar" data-h="0.38"></div><div class="bar" data-h="0.78"></div>
+              <div class="bar" data-h="0.58"></div><div class="bar" data-h="0.92"></div>
+              <div class="bar" data-h="0.7"></div>
+            </div>
+            <div class="chart-labels"><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span></div>
+            <div class="rowlist">
+              <div class="rowline"><span>Juan Yasser</span><span class="tag late">Mora 3d</span><b>$450.000</b></div>
+              <div class="rowline"><span>José Pere</span><span class="tag ok">Al día</span><b>$300.000</b></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 4 · REGISTRAR PAGO -->
+        <section class="clip" id="s4" data-start="11.4" data-duration="3.6">
+          <div class="phone" id="phone4">
+            <div class="notch"></div>
+            <div class="screen">
+              <div class="ph-head">
+                <div>
+                  <div class="ph-name">Juan Yasser</div>
+                  <div class="ph-sub">Préstamo #1043 · quincenal</div>
+                </div>
+                <div class="tag late">Mora 3d</div>
+              </div>
+              <div class="ph-label" style="margin-top:34px">Saldo pendiente</div>
+              <div class="ph-amount grad-indigo" id="ph-saldo">$750.000</div>
+              <div class="inst">
+                <div class="inst-row" id="i1"><span>Cuota 3 · 18 nov</span><b>$250.000</b></div>
+                <div class="inst-row" id="i2"><span>Cuota 4 · 02 dic</span><b>$250.000</b></div>
+                <div class="inst-row" id="i3"><span>Cuota 5 · 17 dic</span><b>$250.000</b></div>
+              </div>
+              <div class="paybtn" id="paybtn">
+                <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                REGISTRAR PAGO
+              </div>
+              <div class="ripple" id="ripple1" style="left:340px; bottom:78px"></div>
+              <div class="ripple" id="ripple2" style="left:340px; bottom:78px"></div>
+              <div class="done" id="done4">
+                <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                Cobrado
+              </div>
+            </div>
+            <div id="coins"></div>
+          </div>
+          <div class="sidetext">
+            <div class="kicker" id="s4-kicker">Sin calculadora · sin cuaderno</div>
+            <p class="sub" id="s4-sub" style="margin-top:14px">Un toque: la cuota se abona, la mora se recalcula<br />y la caja del día queda cuadrada.</p>
+          </div>
+        </section>
+
+        <!-- 5 · COBRANZA -->
+        <section class="clip" id="s5" data-start="15" data-duration="3.4">
+          <div class="head">
+            <div class="kicker" id="s5-kicker">Cobranza del día</div>
+            <div class="big" id="s5-title" style="margin-top:16px">Quién debe,<br /><span class="grad-indigo">hoy</span></div>
+          </div>
+          <div class="queue" id="queue">
+            <div class="qrow active"><div class="avatar">JY</div><div class="qmeta"><div class="qname">Juan Yasser</div><div class="qinfo">Venció hace 3 días · 2 cuotas</div></div><div class="qamt">$450.000</div></div>
+            <div class="qrow"><div class="avatar">JP</div><div class="qmeta"><div class="qname">José Pere</div><div class="qinfo">Vence hoy</div></div><div class="qamt">$300.000</div></div>
+            <div class="qrow"><div class="avatar">MR</div><div class="qmeta"><div class="qname">María Rojas</div><div class="qinfo">Prometió pagar el viernes</div></div><div class="qamt">$180.000</div></div>
+            <div class="qrow"><div class="avatar">CD</div><div class="qmeta"><div class="qname">Carlos Díaz</div><div class="qinfo">Al día · próxima cuota 21 nov</div></div><div class="qamt">$220.000</div></div>
+          </div>
+          <div class="wa" id="wa">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="#86efac"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5.2-1.4A10 10 0 1 0 12 2Zm5.1 14.1c-.2.6-1.2 1.2-1.7 1.2-.4 0-1 .1-3.2-.9-2.7-1.2-4.3-4-4.4-4.2-.1-.2-1-1.4-1-2.6 0-1.3.7-1.9 1-2.2.2-.2.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 1.9c.1.2.1.4 0 .6l-.4.5-.3.3c-.1.1-.2.3-.1.5.1.2.6 1 1.2 1.6.8.8 1.5 1 1.7 1.1.2.1.4.1.6-.1l.8-.9c.2-.2.3-.2.5-.1l1.8.9c.3.1.4.2.5.3.1.2.1.8-.1 1.4Z"/></svg>
+            <div><div>Recordatorio enviado</div><div class="bubble">Hola Juan, tu cuota vence hoy 👋</div></div>
+          </div>
+        </section>
+
+        <!-- 6 · CAJA Y REPORTES -->
+        <section class="clip" id="s6" data-start="18.4" data-duration="3.4">
+          <div class="head">
+            <div class="kicker" id="s6-kicker">Caja y tesorería</div>
+            <div class="big" id="s6-title" style="margin-top:16px">Cuadra la caja<br /><span class="grad-emerald">en segundos</span></div>
+          </div>
+          <div class="cashcard card" id="cashcard">
+            <div class="cashline"><span>Fondo inicial</span><b>$200.000</b></div>
+            <div class="cashline"><span>Recaudado del turno</span><b id="cash-recaudo">$0</b></div>
+            <div class="cashline"><span>Esperado en caja</span><b id="cash-esperado">$0</b></div>
+            <div class="cashline"><span>Contado</span><b id="cash-contado">$0</b></div>
+            <div class="cashline"><span>Diferencia</span><b class="zero" id="cash-diff">$0</b></div>
+          </div>
+          <div class="mini-chart" id="mini-chart">
+            <div class="bar" data-h="0.35"></div><div class="bar" data-h="0.55"></div>
+            <div class="bar" data-h="0.42"></div><div class="bar" data-h="0.72"></div>
+            <div class="bar" data-h="0.6"></div><div class="bar" data-h="0.88"></div>
+          </div>
+          <div class="csv" id="csv">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#a5f3fc" stroke-width="2.4" stroke-linecap="round"><path d="M12 3v12m0 0l4-4m-4 4l-4-4M4 19h16"/></svg>
+            Reportes listos para Excel
+          </div>
+        </section>
+
+        <!-- 7 · PORTAL DEL CLIENTE -->
+        <section class="clip" id="s7" data-start="21.8" data-duration="3">
+          <div class="head">
+            <div class="kicker" id="s7-kicker">Portal del cliente</div>
+            <div class="big" id="s7-title" style="margin-top:14px">Tu cliente,<br /><span class="grad-indigo">autoservicio</span></div>
+          </div>
+          <div class="phone" id="phone7">
+            <div class="notch"></div>
+            <div class="screen">
+              <div class="ph-head">
+                <div>
+                  <div class="ph-name">Mi crédito</div>
+                  <div class="ph-sub">Hola, Juan 👋</div>
+                </div>
+                <div class="tag ok">Al día</div>
+              </div>
+              <div class="ph-label" style="margin-top:32px">Saldo total</div>
+              <div class="ph-amount grad-indigo">$750.000</div>
+              <div class="inst">
+                <div class="inst-row"><span>Próxima cuota</span><b>02 dic</b></div>
+                <div class="inst-row"><span>Valor cuota</span><b>$250.000</b></div>
+                <div class="inst-row"><span>Canales de pago</span><b>Nequi · Banco</b></div>
+              </div>
+              <div class="paybtn" style="background:linear-gradient(100deg,#0e7490,#22d3ee)">
+                SOLICITAR CRÉDITO
+              </div>
+            </div>
+          </div>
+          <div class="sol" id="sol">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="3" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+            Solicitud aprobada · $995.956
+          </div>
+          <div class="google" id="google"><span class="gicon"></span> Entra con Google</div>
+        </section>
+
+        <!-- 8 · CIERRE -->
+        <section class="clip" id="s8" data-start="24.8" data-duration="3.7">
+          <div class="center">
+            <div class="logo-mark" id="logo-mark">
+              <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 12h4l2.5-7 4 14 2.5-7H21" />
+              </svg>
+            </div>
+            <div class="wordmark" id="wordmark">DineroYa</div>
+            <div class="tagline" id="tagline">Tu cartera, bajo control.</div>
+            <div class="badges" id="badges">
+              <span class="badge">Cobranza</span>
+              <span class="badge">Caja</span>
+              <span class="badge">Reportes</span>
+              <span class="badge">Portal del cliente</span>
+            </div>
+            <div class="cta" id="cta">Pruébalo hoy</div>
+          </div>
+          <div class="url" id="url">site-4a5449d5b57540ec884ea1f16a51c5d8.freebuff.page</div>
+        </section>
+      </div>
+
+      <div class="scan" data-layout-allow-occlusion></div>
+      <div class="vignette" data-layout-allow-occlusion></div>
+      <div id="flash" data-layout-allow-occlusion></div>
+      <audio
+        id="track"
+        src="assets/track.wav"
+        data-start="0"
+        data-duration="28.5"
+        data-volume="0.9"
+        data-fade-out="0.6"
+      ></audio>
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+
+      const fmtM = (v) => `$${v.toFixed(1).replace('.', ',')}M`;
+      const fmtPct = (v) => `${v.toFixed(1).replace('.', ',')}%`;
+      const fmtInt = (v) => `${Math.round(v)}`;
+      const fmtMoney = (v) => `$${Math.round(v).toLocaleString('es-CO')}`;
+
+      const counter = (el, from, to, format, at, duration = 1.1) => {
+        const proxy = { v: from };
+        el.textContent = format(from);
+        tl.to(proxy, {
+          v: to,
+          duration,
+          ease: 'power2.out',
+          onUpdate: () => { el.textContent = format(proxy.v); },
+        }, at);
+      };
+
+      // --- cámara y flashes -------------------------------------------------
+      const cut = (at, strength = 0.35) => {
+        tl.set('#flash', { opacity: 0 }, at);
+        tl.to('#flash', { opacity: strength, duration: 0.06, ease: 'power2.out' }, at);
+        tl.to('#flash', { opacity: 0, duration: 0.32, ease: 'power2.in' }, at + 0.06);
+        // Base estable para la cámara: un solo set, luego tweens absolutos.
+        tl.set('#stage', { scale: 1 }, at);
+        tl.to('#stage', { scale: 1.035, duration: 0.18, ease: 'power2.out' }, at);
+        tl.to('#stage', { scale: 1, duration: 0.6, ease: 'power3.out' }, at + 0.18);
+      };
+
+      // --- 1 · gancho -------------------------------------------------------
+      tl.fromTo('#s1-kicker', { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.5, ease: 'power3.out' }, 0.1);
+      tl.fromTo('#s1-amount', { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.5, ease: 'back.out(2)' }, 0.35);
+      tl.fromTo('#s1-a', { yPercent: 110, skewX: -6 }, { yPercent: 0, skewX: 0, duration: 0.62, ease: 'expo.out' }, 0.45);
+      tl.fromTo('#s1-b', { yPercent: 110, skewX: 6 }, { yPercent: 0, skewX: 0, duration: 0.66, ease: 'expo.out' }, 0.62);
+      tl.fromTo('#s1-ghost', { opacity: 0, x: -18 }, { opacity: 0.5, x: 14, duration: 0.3, ease: 'steps(3)' }, 0.9);
+      tl.to('#s1-ghost', { opacity: 0, duration: 0.2 }, 1.3);
+      tl.to('#s1-strike', { width: 560, duration: 0.26, ease: 'power4.out' }, 1.32);
+      tl.fromTo('#s1-hint', { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.5, ease: 'power3.out' }, 1.5);
+      tl.to('#s1-amount', { opacity: 0, y: -30, duration: 0.35, ease: 'power2.in' }, 2.35);
+      tl.to('#s1', { opacity: 0, duration: 0.35, ease: 'power2.in' }, 2.85);
+
+      // --- 2 · caos ---------------------------------------------------------
+      cut(3.2, 0.28);
+      tl.fromTo('#s2-kicker', { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.4, ease: 'power2.out' }, 3.3);
+      tl.fromTo('#s2-title', { opacity: 0, y: 40, scale: 0.94 }, { opacity: 1, y: 0, scale: 1, duration: 0.6, ease: 'expo.out' }, 3.4);
+
+      const tiles = [
+        { id: '#t1', from: { x: -420, y: -260, rotate: -18 } },
+        { id: '#t2', from: { x: 460, y: -180, rotate: 16 } },
+        { id: '#t3', from: { x: -380, y: 160, rotate: -12 } },
+        { id: '#t4', from: { x: 420, y: 240, rotate: 14 } },
+        { id: '#t5', from: { x: 0, y: 380, rotate: 6 } },
+      ];
+      tiles.forEach((t, i) => {
+        tl.fromTo(t.id, { ...t.from, opacity: 0 }, { x: 0, y: 0, rotate: 0, opacity: 1, duration: 0.6, ease: 'back.out(1.7)' }, 3.55 + i * 0.13);
+        tl.to(t.id, { rotate: (i % 2 === 0 ? -1 : 1) * 1.6, duration: 0.5, ease: 'sine.inOut' }, 4.5 + i * 0.05);
+      });
+      tl.fromTo('#s2-foot', { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.5, ease: 'power3.out' }, 5.1);
+      tl.to('#s2', { opacity: 0, scale: 1.04, duration: 0.4, ease: 'power2.in' }, 6.65);
+
+      // --- 3 · dashboard ----------------------------------------------------
+      cut(7.0, 0.55);
+      tl.fromTo('#dash', {
+        opacity: 0, y: 190, rotateX: 26, scale: 0.92, filter: 'blur(14px)',
+      }, {
+        opacity: 1, y: 0, rotateX: 0, scale: 1, filter: 'blur(0px)', duration: 0.85, ease: 'expo.out',
+      }, 7.1);
+      counter(document.querySelector('#kpi-cartera'), 0, 48.6, fmtM, 7.7, 1.3);
+      counter(document.querySelector('#kpi-recaudo'), 0, 3.2, fmtM, 7.95, 1.2);
+      counter(document.querySelector('#kpi-mora'), 0, 4.8, fmtPct, 8.2, 1.1);
+      counter(document.querySelector('#kpi-clientes'), 0, 214, fmtInt, 8.4, 1.1);
+
+      tl.from('#dash-chart .bar', {
+        scaleY: 0, duration: 0.7, stagger: 0.06, ease: 'back.out(1.6)', transformOrigin: 'bottom',
+      }, 8.1);
+      tl.from('#dash .rowline', { opacity: 0, x: -30, duration: 0.45, stagger: 0.12, ease: 'power3.out' }, 8.7);
+      tl.to('#glow', { x: -120, y: -80, duration: 4.4, ease: 'sine.inOut' }, 7.0);
+      tl.to('#s3', { opacity: 0, y: -60, duration: 0.4, ease: 'power2.in' }, 10.9);
+
+      // --- 4 · pago ---------------------------------------------------------
+      cut(11.4, 0.5);
+      tl.fromTo('#phone4', { opacity: 0, y: 240, rotate: -6, scale: 0.9 }, { opacity: 1, y: 0, rotate: 0, scale: 1, duration: 0.8, ease: 'expo.out' }, 11.5);
+      tl.fromTo('#s4-kicker', { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.45, ease: 'power2.out' }, 11.9);
+      tl.fromTo('#s4-sub', { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, 12.1);
+      tl.from('#phone4 .inst-row', { opacity: 0, x: 40, duration: 0.4, stagger: 0.1, ease: 'power3.out' }, 11.9);
+
+      // toque
+      tl.fromTo('#paybtn', { scale: 1 }, { scale: 0.94, duration: 0.09, ease: 'power2.in' }, 13.2);
+      tl.to('#paybtn', { scale: 1, duration: 0.22, ease: 'back.out(3)' }, 13.3);
+      tl.fromTo('#ripple1', { opacity: 0.85, scale: 0.2 }, { opacity: 0, scale: 2.6, duration: 0.7, ease: 'power2.out' }, 13.2);
+      tl.fromTo('#ripple2', { opacity: 0.5, scale: 0.2 }, { opacity: 0, scale: 3.2, duration: 0.9, ease: 'power2.out' }, 13.35);
+
+      // cuotas pagadas + saldo
+      tl.to('#i1', { backgroundColor: 'rgba(52,211,153,0.14)', color: '#a7f3d0', duration: 0.25 }, 13.45);
+      tl.to('#i2', { backgroundColor: 'rgba(52,211,153,0.14)', color: '#a7f3d0', duration: 0.25 }, 13.6);
+      counter(document.querySelector('#ph-saldo'), 750000, 450000, fmtMoney, 13.45, 0.8);
+
+      // monedas
+      const coinsHost = document.querySelector('#coins');
+      for (let i = 0; i < 14; i++) {
+        const c = document.createElement('div');
+        c.className = 'coin';
+        c.style.left = `${180 + i * 16}px`;
+        c.style.bottom = '120px';
+        coinsHost.appendChild(c);
+        const angle = (-160 + i * 9) * (Math.PI / 180);
+        const dist = 210 + (i % 4) * 70;
+        tl.fromTo(c, { opacity: 1, x: 0, y: 0, scale: 1 }, {
+          opacity: 0,
+          x: Math.cos(angle) * dist,
+          y: Math.sin(angle) * dist + 120,
+          scale: 0.4,
+          duration: 0.85 + (i % 3) * 0.08,
+          ease: 'power2.out',
+        }, 13.35 + (i % 5) * 0.02);
+      }
+      tl.fromTo('#done4', { opacity: 0, y: 18, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.45, ease: 'back.out(2.4)' }, 13.8);
+      tl.to('#s4', { opacity: 0, scale: 0.97, duration: 0.35, ease: 'power2.in' }, 14.7);
+
+      // --- 5 · cobranza -----------------------------------------------------
+      cut(15.0, 0.45);
+      tl.fromTo('#s5-kicker', { opacity: 0, x: -22 }, { opacity: 1, x: 0, duration: 0.4, ease: 'power2.out' }, 15.1);
+      tl.fromTo('#s5-title', { opacity: 0, y: 34 }, { opacity: 1, y: 0, duration: 0.55, ease: 'expo.out' }, 15.2);
+      tl.from('#queue .qrow', { opacity: 0, y: 40, rotateX: -14, duration: 0.5, stagger: 0.11, ease: 'back.out(1.5)' }, 15.5);
+      tl.to('#queue .qrow.active', { borderColor: 'rgba(251,113,133,0.95)', duration: 0.35 }, 16.35);
+      tl.fromTo('#wa', { opacity: 0, x: 90, scale: 0.9 }, { opacity: 1, x: 0, scale: 1, duration: 0.55, ease: 'back.out(1.8)' }, 16.7);
+      tl.to('#s5', { opacity: 0, y: -40, duration: 0.35, ease: 'power2.in' }, 18.05);
+
+      // --- 6 · caja ---------------------------------------------------------
+      cut(18.4, 0.45);
+      tl.fromTo('#s6-kicker', { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4 }, 18.5);
+      tl.fromTo('#s6-title', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.55, ease: 'expo.out' }, 18.6);
+      tl.fromTo('#cashcard', { opacity: 0, y: 80, scale: 0.94 }, { opacity: 1, y: 0, scale: 1, duration: 0.7, ease: 'expo.out' }, 18.8);
+      counter(document.querySelector('#cash-recaudo'), 0, 1040000, fmtMoney, 19.2, 1.0);
+      counter(document.querySelector('#cash-esperado'), 0, 1240000, fmtMoney, 19.4, 1.0);
+      counter(document.querySelector('#cash-contado'), 0, 1240000, fmtMoney, 19.6, 1.0);
+      tl.fromTo('#cash-diff', { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: 'back.out(3)' }, 20.1);
+      tl.from('#mini-chart .bar', { scaleY: 0, duration: 0.6, stagger: 0.07, ease: 'back.out(1.6)', transformOrigin: 'bottom' }, 19.3);
+      tl.fromTo('#csv', { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.45, ease: 'power2.out' }, 20.4);
+      tl.to('#s6', { opacity: 0, scale: 1.03, duration: 0.35 }, 21.45);
+
+      // --- 7 · portal -------------------------------------------------------
+      cut(21.8, 0.4);
+      tl.fromTo('#s7-kicker', { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.4 }, 21.9);
+      tl.fromTo('#s7-title', { opacity: 0, y: 28 }, { opacity: 1, y: 0, duration: 0.5, ease: 'expo.out' }, 22.0);
+      tl.fromTo('#phone7', { opacity: 0, x: 160, rotate: 5, scale: 0.92 }, { opacity: 1, x: 0, rotate: 0, scale: 1, duration: 0.8, ease: 'expo.out' }, 22.1);
+      tl.fromTo('#sol', { opacity: 0, y: 20, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.45, ease: 'back.out(2)' }, 22.8);
+      tl.fromTo('#google', { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.45, ease: 'power2.out' }, 23.3);
+      tl.to('#s7', { opacity: 0, duration: 0.35 }, 24.45);
+
+      // --- 8 · cierre -------------------------------------------------------
+      cut(24.8, 0.7);
+      tl.fromTo('#logo-mark', { scale: 0.4, opacity: 0, rotate: -18 }, { scale: 1, opacity: 1, rotate: 0, duration: 0.7, ease: 'back.out(2.2)' }, 24.9);
+      tl.fromTo('#wordmark', { opacity: 0, y: 44, scale: 0.86 }, { opacity: 1, y: 0, scale: 1, duration: 0.8, ease: 'expo.out' }, 25.15);
+      tl.fromTo('#tagline', { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.55, ease: 'power3.out' }, 25.6);
+      tl.from('#badges .badge', { opacity: 0, y: 18, duration: 0.35, stagger: 0.07 }, 25.9);
+      tl.fromTo('#cta', { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: 0.5, ease: 'back.out(2.4)' }, 26.3);
+      tl.to('#cta', { scale: 1.045, duration: 0.9, repeat: 1, yoyo: true, ease: 'sine.inOut' }, 26.9);
+      tl.fromTo('#url', { opacity: 0 }, { opacity: 1, duration: 0.5 }, 26.6);
+      tl.to('#glow', { x: 90, y: 60, scale: 1.2, duration: 3.6, ease: 'sine.inOut' }, 24.8);
+
+      window.__timelines['main'] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>

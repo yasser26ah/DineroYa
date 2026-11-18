@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import {
   Activity, Menu, X, PieChart, Users, Wallet, HandCoins, ScrollText, Settings, LogOut, HardDrive, Cloud,
-  ClipboardList, Home,
+  ClipboardList, Home, Banknote, Bell, Landmark, CreditCard, BarChart3,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
@@ -23,6 +23,11 @@ export const NAV_ITEMS: NavItem[] = [
   { id: 'dashboard', label: 'Resumen Global', icon: PieChart, roles: ['admin', 'gerente', 'cobrador'] },
   { id: 'collections', label: 'Cobranza del Día', icon: HandCoins, roles: ['admin', 'gerente', 'cobrador'] },
   { id: 'loans', label: 'Préstamos', icon: Wallet, roles: ['admin', 'gerente', 'cobrador'] },
+  { id: 'payments', label: 'Recaudos', icon: Banknote, roles: ['admin', 'gerente', 'cobrador'] },
+  { id: 'cash', label: 'Caja', icon: Landmark, roles: ['admin', 'gerente', 'cobrador'] },
+  { id: 'notifications', label: 'Notificaciones', icon: Bell, roles: ['admin', 'gerente', 'cobrador'] },
+  { id: 'channels', label: 'Canales de pago', icon: CreditCard, roles: ['admin', 'gerente'] },
+  { id: 'reports', label: 'Reportes', icon: BarChart3, roles: ['admin', 'gerente'] },
   { id: 'clients', label: 'Clientes', icon: Users, roles: ['admin', 'gerente', 'cobrador'] },
   { id: 'applications', label: 'Solicitudes', icon: ClipboardList, roles: ['admin', 'gerente'] },
   { id: 'audit', label: 'Auditoría', icon: ScrollText, roles: ['admin', 'gerente'] },
@@ -85,8 +90,8 @@ export const Layout: React.FC<{
             <div className="min-w-0">
               <p className="text-xs font-black truncate">{user?.fullName}</p>
               <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1">
-                {mode === 'supabase' ? <Cloud className="w-3 h-3" /> : <HardDrive className="w-3 h-3" />}
-                {mode === 'supabase' ? 'Supabase' : 'Modo local'}
+                {mode === 'local' ? <HardDrive className="w-3 h-3" /> : <Cloud className="w-3 h-3" />}
+                {mode === 'supabase' ? 'Supabase' : mode === 'api' ? 'Freebuff' : 'Modo local'}
               </p>
             </div>
           </div>

@@ -4,6 +4,7 @@
 import React from 'react';
 import { Search, X } from 'lucide-react';
 import { InstallmentStatus, LoanStatus } from '../types';
+import { formatMoneyInput, parseMoneyInput } from '../lib/format';
 
 export const Card: React.FC<{ className?: string; children: React.ReactNode }> = ({ className = '', children }) => (
   <div className={`bg-white rounded-3xl border border-slate-200 shadow-sm ${className}`}>{children}</div>
@@ -89,6 +90,28 @@ export const Field: React.FC<{ label: string; children: React.ReactNode; classNa
 
 export const inputCls =
   'bg-slate-50 border border-slate-100 rounded-2xl p-4 outline-none focus:ring-2 focus:ring-indigo-500 font-bold w-full';
+
+/** Monto editable que muestra los miles con puntos (1.500.000) mientras se digita. */
+export const MoneyInput: React.FC<{
+  /** Valor crudo: solo dígitos y un punto decimal. */
+  value: string;
+  onChange: (v: string) => void;
+  required?: boolean;
+  autoFocus?: boolean;
+  placeholder?: string;
+  className?: string;
+}> = ({ value, onChange, required, autoFocus, placeholder, className = inputCls }) => (
+  <input
+    type="text"
+    inputMode="decimal"
+    required={required}
+    autoFocus={autoFocus}
+    placeholder={placeholder}
+    value={formatMoneyInput(value)}
+    onChange={e => onChange(parseMoneyInput(e.target.value))}
+    className={className}
+  />
+);
 
 export const SearchBar: React.FC<{ value: string; onChange: (v: string) => void; placeholder?: string }> = ({ value, onChange, placeholder }) => (
   <Card className="p-5 flex items-center gap-4">

@@ -7,13 +7,15 @@ import { getAdapter, isSupabaseConfigured, AuthUser, SignUpOptions } from '../se
 interface AuthState {
   user: AuthUser | null;
   loading: boolean;
-  mode: 'local' | 'supabase';
+  mode: 'local' | 'supabase' | 'api';
   isSupabase: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, fullName: string, options?: SignUpOptions) => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   updatePassword: (newPassword: string) => Promise<void>;
   signOut: () => Promise<void>;
+  /** Redirige al inicio de sesión con Freebuff (Google/GitHub/Apple). */
+  startSignIn: () => void;
   refresh: () => Promise<void>;
 }
 
@@ -59,7 +61,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [adapter]);
 
   return (
-    <AuthContext.Provider value={{ user, loading, mode: adapter.mode, isSupabase: isSupabaseConfigured, signIn, signUp, resetPassword, updatePassword, signOut, refresh }}>
+    <AuthContext.Provider value={{
+      user, loading, mode: adapter.mode, isSupabase: isSupabaseConfigured,
+      signIn, signUp, resetPassword, updatePassword, signOut,
+      startSignIn: () => adapter.startSignIn?.(),
+      refresh,
+    }}>
       {children}
     </AuthContext.Provider>
   );

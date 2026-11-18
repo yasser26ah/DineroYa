@@ -23,5 +23,10 @@ dist-ssr
 *.sln
 *.sw?
 
+# Logs y PID del arranque local
+/.local/
+
 # Freebuff agent state
 .freebuff/
+/freebuff-sites-build/
+/.wrangler/

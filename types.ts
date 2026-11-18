@@ -106,7 +106,15 @@ export interface Payment {
   createdAt: string;
 }
 
-export type PaymentMethod = 'cash' | 'transfer' | 'card' | 'other';
+/** Slug del catálogo editable de métodos de pago (tabla payment_methods). */
+export type PaymentMethod = string;
+
+export interface PaymentMethodOption {
+  id: string;
+  name: string;
+  active: boolean;
+  sortOrder: number;
+}
 
 export interface CollectionActivity {
   id: string;
@@ -152,6 +160,8 @@ export interface CreditApplication {
   email?: string;
   address?: string;
   requestedAmount: number;
+  /** Monto aprobado por el analista (puede diferir del solicitado). */
+  approvedAmount?: number | null;
   purpose?: string;
   notes?: string;
   status: CreditApplicationStatus;
@@ -166,6 +176,83 @@ export const CREDIT_APPLICATION_STATUS_LABELS: Record<CreditApplicationStatus, s
   approved: 'Aprobada',
   rejected: 'Rechazada',
   cancelled: 'Cancelada',
+};
+
+// --- Centro de notificaciones y automatización ---
+
+export type NotificationChannel = 'whatsapp' | 'email';
+export type NotificationStatus = 'pending' | 'sent' | 'cancelled';
+
+export interface NotificationTemplate {
+  id: string;
+  name: string;
+  channel: NotificationChannel;
+  subject?: string;
+  body: string;
+  active: boolean;
+}
+
+export interface AppNotification {
+  id: string;
+  clientId?: string | null;
+  loanId?: string | null;
+  channel: NotificationChannel;
+  templateId?: string | null;
+  title: string;
+  body: string;
+  status: NotificationStatus;
+  createdAt: string;
+  sentAt?: string | null;
+}
+
+export const NOTIFICATION_CHANNEL_LABELS: Record<NotificationChannel, string> = {
+  whatsapp: 'WhatsApp',
+  email: 'Correo',
+};
+
+export const NOTIFICATION_STATUS_LABELS: Record<NotificationStatus, string> = {
+  pending: 'Pendiente',
+  sent: 'Enviada',
+  cancelled: 'Descartada',
+};
+
+// --- Caja y tesorería ---
+
+export type CashSessionStatus = 'open' | 'closed';
+
+export interface CashSession {
+  id: string;
+  openedBy?: string | null;
+  openedAt: string;
+  closedAt?: string | null;
+  openingAmount: number;
+  countedAmount?: number | null;
+  expectedAmount?: number | null;
+  difference?: number | null;
+  notes?: string;
+  status: CashSessionStatus;
+}
+
+// --- Canales de pago y pasarelas ---
+
+export type PaymentChannelKind = 'bank_account' | 'wallet' | 'card_gateway' | 'cash_office';
+
+export interface PaymentChannel {
+  id: string;
+  name: string;
+  kind: PaymentChannelKind;
+  accountInfo?: string;
+  instructions?: string;
+  link?: string;
+  active: boolean;
+  sortOrder: number;
+}
+
+export const PAYMENT_CHANNEL_KIND_LABELS: Record<PaymentChannelKind, string> = {
+  bank_account: 'Cuenta bancaria',
+  wallet: 'Billetera digital',
+  card_gateway: 'Pasarela de tarjetas',
+  cash_office: 'Oficina / efectivo',
 };
 
 export interface AppSettings {
@@ -250,12 +337,16 @@ export const ACTIVITY_RESULT_LABELS: Record<ActivityResult, string> = {
   other: 'Otro',
 };
 
-export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
+export const PAYMENT_METHOD_LABELS: Record<string, string> = {
   cash: 'Efectivo',
   transfer: 'Transferencia',
   card: 'Tarjeta',
   other: 'Otro',
 };
+
+/** Nombre visible de un método: catálogo editable, o el de respaldo si aún no cargó. */
+export const paymentMethodLabel = (id: string, options?: PaymentMethodOption[]): string =>
+  options?.find(m => m.id === id)?.name ?? PAYMENT_METHOD_LABELS[id] ?? id;
 
 export const LOAN_STATUS_LABELS: Record<LoanStatus, string> = {
   active: 'Activo',

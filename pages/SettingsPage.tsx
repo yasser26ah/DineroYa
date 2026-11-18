@@ -2,20 +2,84 @@
 // DineroYa — Configuración y utilidades de datos
 // ============================================================================
 import React, { useState } from 'react';
-import { Settings as SettingsIcon, Download, Database, Upload, Cloud, CheckCircle2 } from 'lucide-react';
+import { Settings as SettingsIcon, Download, Database, Upload, Cloud, CheckCircle2, CreditCard } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import { Card, PageHeader, Btn, Field, inputCls } from '../components/ui';
 import { fmtMoney } from '../lib/format';
 import { isSupabaseConfigured } from '../services/dataAdapter';
+import { PaymentMethodOption } from '../types';
 
 const OLD_KEYS = ['db_clients', 'db_loans', 'db_payments'];
 
+/** Fila editable de un método de pago: renombrar y activar/desactivar. */
+const PaymentMethodRow: React.FC<{
+  method: PaymentMethodOption;
+  onSave: (input: { id?: string; name: string; active?: boolean }) => Promise<PaymentMethodOption>;
+}> = ({ method, onSave }) => {
+  const [name, setName] = useState(method.name);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const save = async (patch?: { active?: boolean }) => {
+    setBusy(true);
+    setError(null);
+    try {
+      const finalName = name.trim() || method.name;
+      await onSave({ id: method.id, name: finalName, ...patch });
+      setName(finalName);
+    } catch (err: any) {
+      setError(err.message ?? 'No se pudo guardar');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+        <input value={name} onChange={e => setName(e.target.value)} className={`${inputCls} flex-1`} />
+        <Btn onClick={() => save()} disabled={busy || name.trim() === method.name} className="shrink-0">Guardar</Btn>
+        <Btn
+          variant={method.active ? 'secondary' : 'success'}
+          onClick={() => save({ active: !method.active })}
+          disabled={busy}
+          className="shrink-0"
+        >
+          {method.active ? 'Desactivar' : 'Activar'}
+        </Btn>
+      </div>
+      {!method.active && (
+        <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest">
+          Desactivado: no aparece al registrar pagos
+        </p>
+      )}
+      {error && <p className="text-rose-600 text-xs font-bold">{error}</p>}
+    </div>
+  );
+};
+
 export const SettingsPage: React.FC = () => {
-  const { settings, updateSettings, clients, loans, installments, payments, activities } = useData();
-  const { isSupabase } = useAuth();
+  const { settings, updateSettings, clients, loans, installments, payments, activities, paymentMethods, savePaymentMethod, importBackup } = useData();
+  const { isSupabase, mode } = useAuth();
   const [saved, setSaved] = useState(false);
   const [importMsg, setImportMsg] = useState<string | null>(null);
+  const [newMethod, setNewMethod] = useState('');
+  const [methodError, setMethodError] = useState<string | null>(null);
+  const [methodBusy, setMethodBusy] = useState(false);
+
+  const addMethod = async () => {
+    setMethodBusy(true);
+    setMethodError(null);
+    try {
+      await savePaymentMethod({ name: newMethod });
+      setNewMethod('');
+    } catch (err: any) {
+      setMethodError(err.message ?? 'No se pudo crear el método de pago');
+    } finally {
+      setMethodBusy(false);
+    }
+  };
 
   const submit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -39,6 +103,25 @@ export const SettingsPage: React.FC = () => {
     link.download = `backup_finanzapro_${new Date().toISOString().split('T')[0]}.json`;
     link.click();
     URL.revokeObjectURL(url);
+  };
+
+  const [importBusy, setImportBusy] = useState(false);
+
+  const importFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImportBusy(true);
+    setImportMsg(null);
+    try {
+      const parsed = JSON.parse(await file.text());
+      await importBackup(parsed);
+      setImportMsg('Respaldo importado correctamente.');
+    } catch (err: any) {
+      setImportMsg(err?.message ?? 'No se pudo importar el respaldo.');
+    } finally {
+      setImportBusy(false);
+      e.target.value = '';
+    }
   };
 
   const importLegacy = () => {
@@ -107,6 +190,37 @@ export const SettingsPage: React.FC = () => {
       </Card>
 
       <Card className="p-8">
+        <div className="flex items-center gap-4 mb-6">
+          <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl"><CreditCard className="w-6 h-6" /></div>
+          <div>
+            <h3 className="text-lg font-black text-slate-900">Métodos de pago</h3>
+            <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">
+              Cambia el nombre o agrega los que uses (Nequi, Daviplata, banco...)
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          {paymentMethods.map(m => (
+            <PaymentMethodRow key={m.id} method={m} onSave={savePaymentMethod} />
+          ))}
+        </div>
+
+        <div className="flex flex-col md:flex-row gap-3 mt-6">
+          <input
+            value={newMethod}
+            onChange={e => setNewMethod(e.target.value)}
+            className={inputCls}
+            placeholder="Nuevo método (ej. Nequi)"
+          />
+          <Btn onClick={addMethod} disabled={methodBusy || !newMethod.trim()} className="shrink-0">
+            {methodBusy ? 'Agregando...' : 'Agregar método'}
+          </Btn>
+        </div>
+        {methodError && <p className="text-rose-600 text-sm font-bold mt-3">{methodError}</p>}
+      </Card>
+
+      <Card className="p-8">
         <div className="flex items-center gap-4 mb-8">
           <div className="p-3 bg-slate-100 text-slate-600 rounded-2xl"><Database className="w-6 h-6" /></div>
           <div>
@@ -121,10 +235,16 @@ export const SettingsPage: React.FC = () => {
           <Btn variant="secondary" onClick={exportData} className="flex items-center gap-2">
             <Download className="w-4 h-4" /> Exportar backup JSON
           </Btn>
-          {!isSupabase && (
+          {mode === 'local' && (
             <Btn variant="secondary" onClick={importLegacy} className="flex items-center gap-2">
               <Upload className="w-4 h-4" /> Recuperar datos versión anterior
             </Btn>
+          )}
+          {mode === 'api' && clients.length === 0 && (
+            <label className={`cursor-pointer inline-flex items-center gap-2 px-5 py-3 rounded-2xl font-bold text-sm bg-slate-100 text-slate-700 hover:bg-slate-200 transition ${importBusy ? 'opacity-60 pointer-events-none' : ''}`}>
+              <Upload className="w-4 h-4" /> {importBusy ? 'Importando...' : 'Importar respaldo JSON'}
+              <input type="file" accept="application/json,.json" onChange={importFile} className="hidden" />
+            </label>
           )}
         </div>
         {importMsg && (
@@ -134,20 +254,28 @@ export const SettingsPage: React.FC = () => {
 
       <Card className="p-8">
         <div className="flex items-center gap-4 mb-6">
-          <div className={`p-3 rounded-2xl ${isSupabase ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+          <div className={`p-3 rounded-2xl ${mode === 'local' ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600'}`}>
             <Cloud className="w-6 h-6" />
           </div>
           <div>
             <h3 className="text-lg font-black text-slate-900">
-              {isSupabase ? 'Conectado a Supabase' : 'Modo local (sin backend)'}
+              {mode === 'api' ? 'Conectado a la nube' : isSupabase ? 'Conectado a Supabase' : 'Modo local (sin backend)'}
             </h3>
             <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">
-              {isSupabase ? 'Multiusuario con autenticación y auditoría en la nube' : 'Los datos viven solo en este navegador'}
+              {mode === 'api'
+                ? 'Datos en D1 con login de Google y permisos por rol'
+                : isSupabase ? 'Multiusuario con autenticación y auditoría en la nube' : 'Los datos viven solo en este navegador'}
             </p>
           </div>
         </div>
 
-        {!isSupabase && (
+        {mode === 'api' && (
+          <div className="bg-emerald-50 rounded-3xl p-5 border border-emerald-100 text-sm text-emerald-800 font-medium leading-relaxed">
+            El equipo entra con su cuenta de Google desde la pantalla de acceso. Asigna roles, permisos y la ficha de cliente de cada persona en <span className="font-bold">Equipo</span>.
+          </div>
+        )}
+
+        {mode === 'local' && (
           <div className="bg-slate-50 rounded-3xl p-5 border border-slate-100 text-sm text-slate-600 font-medium leading-relaxed">
             <p className="font-black text-slate-800 mb-2">Para activar el modo multiusuario:</p>
             <ol className="list-decimal ml-5 space-y-1.5">

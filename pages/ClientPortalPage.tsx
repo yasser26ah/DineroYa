@@ -15,6 +15,7 @@ import { fmtDate, fmtMoney, todayISO } from '../lib/format';
 import { loanOutstanding } from '../lib/engine';
 import {
   CREDIT_APPLICATION_STATUS_LABELS, FREQUENCY_LABELS, INSTALLMENT_STATUS_LABELS, LOAN_STATUS_LABELS,
+  PAYMENT_CHANNEL_KIND_LABELS,
 } from '../types';
 
 const appStatusStyle = (s: string) =>
@@ -25,7 +26,7 @@ const appStatusStyle = (s: string) =>
 
 export const ClientPortalPage: React.FC = () => {
   const { user } = useAuth();
-  const { clients, loans, installments, applications, settings, createApplication } = useData();
+  const { clients, loans, installments, applications, settings, paymentChannels, createApplication } = useData();
   const [showRequest, setShowRequest] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,6 +53,17 @@ export const ClientPortalPage: React.FC = () => {
       (user?.email && a.email && a.email.toLowerCase() === user.email.toLowerCase())),
     [applications, me, user],
   );
+
+  // Tope del portal: 3 solicitudes por día (el servidor lo valida igualmente).
+  const DAILY_LIMIT = 3;
+  const todayCount = useMemo(
+    () => myApplications.filter(a =>
+      a.status !== 'cancelled' &&
+      new Date(a.createdAt).toDateString() === new Date().toDateString(),
+    ).length,
+    [myApplications],
+  );
+  const limitReached = todayCount >= DAILY_LIMIT;
 
   const outstanding = myLoans
     .filter(l => l.status !== 'cancelled' && l.status !== 'paid')
@@ -97,7 +109,12 @@ export const ClientPortalPage: React.FC = () => {
         title={`Hola, ${user?.fullName?.split(' ')[0] ?? 'cliente'}`}
         subtitle="Consulta tus préstamos, tus cuotas y solicita un nuevo crédito."
         actions={
-          <Btn onClick={() => { setShowRequest(true); setSuccess(null); }} className="flex items-center gap-2">
+          <Btn
+            onClick={() => { setShowRequest(true); setSuccess(null); setError(null); }}
+            disabled={limitReached}
+            className="flex items-center gap-2"
+            title={limitReached ? 'Ya enviaste 3 solicitudes hoy' : undefined}
+          >
             <Plus className="w-4 h-4" /> Solicitar crédito
           </Btn>
         }
@@ -107,6 +124,15 @@ export const ClientPortalPage: React.FC = () => {
         <div className="mb-6 bg-emerald-50 border border-emerald-100 text-emerald-700 p-4 rounded-2xl flex items-start gap-2">
           <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5" />
           <p className="text-sm font-bold">{success}</p>
+        </div>
+      )}
+
+      {limitReached && (
+        <div className="mb-6 bg-amber-50 border border-amber-100 text-amber-700 p-4 rounded-2xl flex items-start gap-2">
+          <Clock className="w-5 h-5 shrink-0 mt-0.5" />
+          <p className="text-sm font-bold">
+            Ya enviaste {DAILY_LIMIT} solicitudes hoy. Podrás enviar otra mañana.
+          </p>
         </div>
       )}
 
@@ -198,6 +224,11 @@ export const ClientPortalPage: React.FC = () => {
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="font-black text-slate-900">{fmtMoney(a.requestedAmount, cur)}</p>
+                      {a.status === 'approved' && a.approvedAmount && (
+                        <p className="text-[11px] font-black text-emerald-600 uppercase tracking-widest mt-0.5">
+                          Aprobado por {fmtMoney(a.approvedAmount, cur)}
+                        </p>
+                      )}
                       <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
                         Enviada el {fmtDate(a.createdAt.slice(0, 10))}
                       </p>
@@ -216,6 +247,32 @@ export const ClientPortalPage: React.FC = () => {
           )}
         </Card>
       </div>
+
+      {paymentChannels.filter(c => c.active).length > 0 && (
+        <Card className="p-6 mt-6">
+          <h3 className="text-lg font-black text-slate-900 mb-1">Canales de pago</h3>
+          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-4">Dónde puedes pagar tu cuota</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {paymentChannels.filter(c => c.active).map(c => (
+              <div key={c.id} className="border border-slate-100 rounded-2xl p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="font-black text-slate-900">{c.name}</p>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 shrink-0">
+                    {PAYMENT_CHANNEL_KIND_LABELS[c.kind]}
+                  </span>
+                </div>
+                {c.accountInfo && <p className="text-xs font-bold text-slate-600 mt-2">{c.accountInfo}</p>}
+                {c.instructions && <p className="text-xs font-medium text-slate-500 mt-1">{c.instructions}</p>}
+                {c.link && (
+                  <a href={c.link} target="_blank" rel="noreferrer" className="text-[11px] font-black text-indigo-600 uppercase tracking-widest mt-2 inline-block">
+                    Pagar en línea
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       <Card className="p-6 mt-6">
         <h3 className="text-lg font-black text-slate-900 mb-2">Mis datos</h3>
@@ -251,6 +308,9 @@ export const ClientPortalPage: React.FC = () => {
               <Clock className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
               <p className="text-[11px] font-medium text-slate-500">
                 Revisaremos tu solicitud y te contactaremos. Enviarla no garantiza la aprobación ni el monto final.
+                <br />
+                <strong>Solicitudes hoy: {todayCount} de {DAILY_LIMIT}.</strong> Máximo 3 por día y solo una por monto
+                mientras la anterior siga pendiente. Las repetidas se rechazan automáticamente.
               </p>
             </div>
             <div className="flex gap-3">

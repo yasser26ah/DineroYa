@@ -15,7 +15,7 @@ import { loanOutstanding, nextInstallmentNumber } from '../lib/engine';
 import { fmtDate, fmtDateTime, fmtMoney } from '../lib/format';
 import {
   ACTIVITY_RESULT_LABELS, ACTIVITY_TYPE_LABELS, Client, FREQUENCY_LABELS, Installment, InstallmentStatus,
-  Loan, LOAN_STATUS_LABELS, PAYMENT_METHOD_LABELS, Payment,
+  Loan, LOAN_STATUS_LABELS, paymentMethodLabel, Payment,
 } from '../types';
 
 type ModalState =
@@ -31,7 +31,7 @@ type ModalState =
 
 export const LoansPage: React.FC = () => {
   const {
-    loans, clients, installments, payments, activities, settings, profiles, cancelLoan, assignLoan,
+    loans, clients, installments, payments, activities, settings, profiles, cancelLoan, assignLoan, paymentMethods,
   } = useData();
   const { user } = useAuth();
   const cur = settings.currency;
@@ -222,7 +222,7 @@ export const LoansPage: React.FC = () => {
                               <div key={p.id} className="bg-white rounded-2xl border border-slate-100 p-3.5">
                                 <div className="flex justify-between items-center">
                                   <p className="font-black text-slate-800">{fmtMoney(p.amount, cur)}</p>
-                                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{PAYMENT_METHOD_LABELS[p.method]}</span>
+                                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{paymentMethodLabel(p.method, paymentMethods)}</span>
                                 </div>
                                 <div className="flex justify-between items-center mt-1">
                                   <p className="text-[11px] text-slate-400 font-bold">

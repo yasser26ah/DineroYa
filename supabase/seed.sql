@@ -1,0 +1,4 @@
+-- Datos iniciales opcionales para la base local (Docker).
+-- Se ejecuta después de las migraciones en `npm run db:reset`.
+-- Deja este archivo vacío si quieres arrancar con la cartera en blanco.
+-- Los usuarios se crean desde la app (el primero queda como administrador).
