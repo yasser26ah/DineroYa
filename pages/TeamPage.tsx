@@ -23,8 +23,8 @@ const ROLE_STYLE: Record<UserRole, string> = {
 };
 
 const ROLE_HELP: Record<UserRole, string> = {
-  admin: 'Acceso total: configuración, equipo, cancelaciones y auditoría.',
-  gerente: 'Ve toda la cartera y la auditoría; no gestiona usuarios.',
+  admin: 'Acceso total: configuración, equipo, cancelaciones y Log.',
+  gerente: 'Ve toda la cartera y el Log; no gestiona usuarios.',
   cobrador: 'Ve y gestiona solo los préstamos asignados a él.',
   cliente: 'Portal de autoservicio: sus préstamos, cuotas y solicitudes de crédito.',
 };
@@ -36,7 +36,6 @@ const SCREEN_OPTIONS: { id: string; label: string }[] = [
   { id: 'loans', label: 'Préstamos' },
   { id: 'clients', label: 'Clientes' },
   { id: 'applications', label: 'Solicitudes de crédito' },
-  { id: 'audit', label: 'Auditoría' },
   { id: 'team', label: 'Equipo' },
   { id: 'settings', label: 'Configuración' },
 ];

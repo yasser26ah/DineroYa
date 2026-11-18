@@ -1,8 +1,12 @@
 // ============================================================================
 // DineroYa — Cartera de Préstamos
 // Seguimiento, trazabilidad y gestión de cobranza de préstamos.
+// ---------------------------------------------------------------------------
+// Navegación por hash (#/cobranza, #/configuracion/log...) con resolución de
+// rutas heredadas. Notificaciones vive dentro de Cobranza; Canales de pago y
+// Log viven dentro de Configuración; Caja ya no forma parte del producto.
 // ============================================================================
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, KeyRound } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { DataProvider, useData } from './context/DataContext';
@@ -13,18 +17,14 @@ import { DashboardPage } from './pages/DashboardPage';
 import { CollectionsPage } from './pages/CollectionsPage';
 import { LoansPage } from './pages/LoansPage';
 import { ClientsPage } from './pages/ClientsPage';
-import { AuditPage } from './pages/AuditPage';
 import { TeamPage } from './pages/TeamPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { ClientPortalPage } from './pages/ClientPortalPage';
 import { ApplicationsPage } from './pages/ApplicationsPage';
 import { PaymentsPage } from './pages/PaymentsPage';
-import { CashPage } from './pages/CashPage';
-import { NotificationsPage } from './pages/NotificationsPage';
-import { ChannelsPage } from './pages/ChannelsPage';
 import { ReportsPage } from './pages/ReportsPage';
-import { TermsPage } from './pages/TermsPage';
-import { PrivacyPage } from './pages/PrivacyPage';
+import { DEFAULT_TARGET, isLegacyRoute, targetFromHash, targetToHash } from './lib/nav';
+import type { NavTarget, TabId } from './lib/nav';
 
 const ErrorBanner: React.FC<{ message: string; onRetry: () => void }> = ({ message, onRetry }) => (
   <div className="mb-6 bg-rose-50 border border-rose-100 text-rose-700 p-4 rounded-2xl flex items-start justify-between gap-4">
@@ -95,8 +95,11 @@ const ResetPasswordPage: React.FC<{ onDone: () => void }> = ({ onDone }) => {
 };
 
 const Shell: React.FC = () => {
-  const { user, loading, isSupabase } = useAuth();
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const { user, loading } = useAuth();
+  const [target, setTarget] = useState<NavTarget>(() => {
+    if (typeof window === 'undefined') return DEFAULT_TARGET;
+    return targetFromHash(window.location.hash);
+  });
   const [isResetFlow, setIsResetFlow] = useState(() => {
     if (typeof window === 'undefined') return false;
     const params = new URLSearchParams(window.location.search);
@@ -108,6 +111,43 @@ const Shell: React.FC = () => {
     return false;
   });
 
+  const navigate = useCallback((next: NavTarget) => {
+    setTarget(next);
+    if (typeof window === 'undefined') return;
+    const hash = targetToHash(next);
+    if (window.location.hash !== hash) window.history.pushState(null, '', hash);
+  }, []);
+
+  // Normaliza una ruta heredada al montar (p. ej. #/notificaciones).
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const legacy = isLegacyRoute(window.location.hash);
+    const expected = targetToHash(targetFromHash(window.location.hash));
+    if (legacy || window.location.hash !== expected) {
+      window.history.replaceState(null, '', expected);
+    }
+  }, []);
+
+  // Atrás/adelante del navegador.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const sync = () => {
+      const next = targetFromHash(window.location.hash);
+      setTarget(next);
+      // Reescribe las rutas heredadas a su forma canónica, sin recargar.
+      const canonical = targetToHash(next);
+      if (isLegacyRoute(window.location.hash) && window.location.hash !== canonical) {
+        window.history.replaceState(null, '', canonical);
+      }
+    };
+    window.addEventListener('hashchange', sync);
+    window.addEventListener('popstate', sync);
+    return () => {
+      window.removeEventListener('hashchange', sync);
+      window.removeEventListener('popstate', sync);
+    };
+  }, []);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
@@ -116,55 +156,71 @@ const Shell: React.FC = () => {
     );
   }
 
-  // El enlace del email aterriza aquí con la sesión de recuperación activa:
-  // el usuario define su nueva contraseña y vuelve al login.
   if (isResetFlow) return <ResetPasswordPage onDone={() => setIsResetFlow(false)} />;
-
   if (!user) return <LoginPage />;
 
   return (
     <DataProvider>
-      <AppBody activeTab={activeTab} onNavigate={setActiveTab} isSupabase={isSupabase} />
+      <AppBody target={target} onNavigate={navigate} />
     </DataProvider>
   );
 };
 
-const AppBody: React.FC<{ activeTab: string; onNavigate: (t: string) => void; isSupabase: boolean }> = ({ activeTab, onNavigate, isSupabase }) => {
+const AppBody: React.FC<{ target: NavTarget; onNavigate: (target: NavTarget) => void }> = ({ target, onNavigate }) => {
   const { error, refresh, loading, clients, profiles } = useData();
   const { user } = useAuth();
   const firstLoad = loading && clients.length === 0;
 
-  // Si la pestaña activa no está permitida por el rol, redirige a la primera permitida.
   const myProfile = profiles.find(p => p.id === user?.id);
-  const allowed = myProfile?.screens;
+
+  // Pantallas permitidas. "audit" era el id del módulo anterior: ahora Log
+  // forma parte de Configuración, así que se traduce en lugar de quedar fuera.
+  const allowed = useMemo(() => {
+    const raw = myProfile?.screens;
+    if (!raw || raw.length === 0) return undefined;
+    return [...new Set(raw.map(screen => (screen === 'audit' ? 'settings' : screen)))];
+  }, [myProfile]);
+
   const isClient = user?.role === 'cliente';
-  const effectiveTab = isClient
+  const effectiveTab: TabId = isClient
     ? 'portal'
-    : (allowed && allowed.length > 0 && !allowed.includes(activeTab)) ? allowed[0] : activeTab;
+    : allowed && !allowed.includes(target.tab)
+      ? (allowed[0] as TabId)
+      : target.tab;
+
+  useEffect(() => {
+    if (effectiveTab !== target.tab) onNavigate({ ...target, tab: effectiveTab });
+  }, [effectiveTab, target, onNavigate]);
 
   const page = (() => {
     switch (effectiveTab) {
       case 'portal': return <ClientPortalPage />;
       case 'applications': return <ApplicationsPage />;
-      case 'collections': return <CollectionsPage />;
+      case 'collections':
+        return (
+          <CollectionsPage
+            section={target.collections}
+            onSectionChange={section => onNavigate({ ...target, collections: section })}
+          />
+        );
       case 'loans': return <LoansPage />;
       case 'payments': return <PaymentsPage />;
-      case 'cash': return <CashPage />;
-      case 'notifications': return <NotificationsPage />;
-      case 'channels': return <ChannelsPage />;
       case 'reports': return <ReportsPage />;
       case 'clients': return <ClientsPage />;
-      case 'audit': return <AuditPage />;
       case 'team': return <TeamPage />;
-      case 'settings': return <SettingsPage />;
-      case 'terms': return <TermsPage />;
-      case 'privacy': return <PrivacyPage />;
-      default: return <DashboardPage onGoCollect={() => onNavigate('collections')} />;
+      case 'settings':
+        return (
+          <SettingsPage
+            section={target.settings}
+            onSectionChange={section => onNavigate({ ...target, settings: section })}
+          />
+        );
+      default: return <DashboardPage onGoCollect={() => onNavigate({ ...target, tab: 'collections', collections: 'today' })} />;
     }
   })();
 
   return (
-    <Layout active={effectiveTab} onNavigate={onNavigate}>
+    <Layout active={effectiveTab} activeTarget={{ ...target, tab: effectiveTab }} onNavigate={onNavigate}>
       <div className="pt-4 lg:pt-6">
         {error && <ErrorBanner message={error} onRetry={refresh} />}
         {firstLoad ? (

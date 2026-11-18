@@ -94,7 +94,7 @@ const ChannelRow: React.FC<{ channel: PaymentChannel; onSave: (input: PaymentCha
   );
 };
 
-export const ChannelsPage: React.FC = () => {
+export const ChannelsPage: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => {
   const { paymentChannels, savePaymentChannel } = useData();
   const [name, setName] = useState('');
   const [kind, setKind] = useState<PaymentChannelKind>('wallet');
@@ -115,8 +115,17 @@ export const ChannelsPage: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col gap-8">
-      <PageHeader title="Canales de pago" subtitle="Cuentas, billeteras y enlaces que verá el cliente para pagar" />
+    <div className="flex flex-col gap-8" data-reveal>
+      {embedded ? (
+        <div>
+          <h3 className="text-lg font-black text-slate-900">Canales de pago</h3>
+          <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">
+            Cuentas, billeteras y enlaces que verá el cliente para pagar
+          </p>
+        </div>
+      ) : (
+        <PageHeader title="Canales de pago" subtitle="Cuentas, billeteras y enlaces que verá el cliente para pagar" />
+      )}
 
       <div className="bg-sky-50 border border-sky-100 text-sky-800 p-4 rounded-2xl text-xs font-bold leading-relaxed">
         Aquí registras los datos reales de cada canal (banco, Nequi, Daviplata, enlace de pasarela) y las instrucciones.

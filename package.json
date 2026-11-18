@@ -16,12 +16,14 @@
     "db:reset": "npm run db:sync && supabase db reset",
     "build:sites": "vite build --mode sites --outDir freebuff-sites-build/assets --emptyOutDir && node scripts/build-worker.mjs",
     "sites:dev": "wrangler dev --config wrangler.sites.jsonc --port 8787",
-    "sites:types": "tsc --noEmit"
+    "sites:types": "tsc --noEmit",
+    "check:nav": "node scripts/check-nav.mjs"
   },
   "dependencies": {
     "@freebuff/auth": "^0.1.0",
     "@google/genai": "^1.40.0",
     "@supabase/supabase-js": "^2.117.1",
+    "animejs": "^4.5.0",
     "lucide-react": "^0.563.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",

@@ -1,10 +1,12 @@
 // ============================================================================
-// DineroYa — Auditoría: bitácora global de trazabilidad
+// DineroYa — Log
+// Antes "Auditoría de app": bitácora global de trazabilidad. Vive dentro de
+// Configuración y conserva visor, filtros, detalle y exportación.
 // ============================================================================
 import React, { useMemo, useState } from 'react';
-import { ScrollText, ChevronDown, ChevronUp } from 'lucide-react';
+import { ScrollText, ChevronDown, ChevronUp, Download } from 'lucide-react';
 import { useData } from '../context/DataContext';
-import { Card, PageHeader, EmptyState, SearchBar } from '../components/ui';
+import { Card, PageHeader, EmptyState, SearchBar, Btn } from '../components/ui';
 import { fmtDateTime } from '../lib/format';
 
 const ENTITY_LABELS: Record<string, string> = {
@@ -28,7 +30,9 @@ const ACTION_STYLE: Record<string, string> = {
   SEED: 'bg-slate-200 text-slate-600',
 };
 
-export const AuditPage: React.FC = () => {
+const csvCell = (value: unknown) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+
+export const LogPage: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => {
   const { auditEvents } = useData();
   const [search, setSearch] = useState('');
   const [entity, setEntity] = useState('all');
@@ -57,16 +61,58 @@ export const AuditPage: React.FC = () => {
     return list;
   }, [auditEvents, entity, actor, search]);
 
+  const exportLog = () => {
+    const rows = [
+      ['Fecha', 'Entidad', 'Acción', 'Autor', 'Detalle'],
+      ...visible.map(ev => [
+        fmtDateTime(ev.createdAt),
+        ENTITY_LABELS[ev.entity] ?? ev.entity,
+        ev.action,
+        ev.actorName ?? 'Sistema',
+        JSON.stringify(ev.details ?? {}),
+      ]),
+    ];
+    const csv = rows.map(row => row.map(csvCell).join(',')).join('\r\n');
+    const blob = new Blob([`\ufeff${csv}`], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `log_dineroya_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader
-        title="Auditoría"
-        subtitle="Bitácora automática de toda la operación: quién hizo qué y cuándo"
-      />
+      {embedded ? (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 className="text-lg font-black text-slate-900">Log</h3>
+            <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">
+              Bitácora automática de la operación: quién hizo qué y cuándo
+            </p>
+          </div>
+          <Btn variant="secondary" onClick={exportLog} className="flex items-center gap-2">
+            <Download className="w-4 h-4" /> Exportar CSV
+          </Btn>
+        </div>
+      ) : (
+        <PageHeader
+          title="Log"
+          subtitle="Bitácora automática de toda la operación: quién hizo qué y cuándo"
+          actions={
+            <Btn variant="secondary" onClick={exportLog} className="flex items-center gap-2">
+              <Download className="w-4 h-4" /> Exportar CSV
+            </Btn>
+          }
+        />
+      )}
 
-      <SearchBar value={search} onChange={setSearch} placeholder="Buscar en la bitácora (autor, detalle, contenido JSON)..." />
+      <div data-reveal>
+        <SearchBar value={search} onChange={setSearch} placeholder="Buscar en el log (autor, detalle, contenido JSON)..." />
+      </div>
 
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-3" data-reveal>
         <select value={entity} onChange={e => setEntity(e.target.value)} className="bg-white border border-slate-200 rounded-2xl px-4 py-3 font-bold text-sm text-slate-600 outline-none focus:ring-2 focus:ring-indigo-500">
           <option value="all">Todas las entidades</option>
           {entities.map(en => <option key={en} value={en}>{ENTITY_LABELS[en] ?? en}</option>)}
@@ -84,7 +130,7 @@ export const AuditPage: React.FC = () => {
         {/* Móvil: tarjetas apiladas */}
         <div className="md:hidden flex flex-col gap-3">
           {visible.slice(0, 300).map(ev => (
-            <div key={ev.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm">
+            <div key={ev.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm" data-reveal>
               <button
                 onClick={() => setExpanded(expanded === ev.id ? null : ev.id)}
                 className="w-full text-left p-4"

@@ -6,8 +6,8 @@ import { Search, X } from 'lucide-react';
 import { InstallmentStatus, LoanStatus } from '../types';
 import { formatMoneyInput, parseMoneyInput } from '../lib/format';
 
-export const Card: React.FC<{ className?: string; children: React.ReactNode }> = ({ className = '', children }) => (
-  <div className={`bg-white rounded-3xl border border-slate-200 shadow-sm ${className}`}>{children}</div>
+export const Card: React.FC<{ className?: string; children: React.ReactNode } & React.HTMLAttributes<HTMLDivElement>> = ({ className = '', children, ...rest }) => (
+  <div className={`bg-white rounded-3xl border border-slate-200 shadow-sm ${className}`} {...rest}>{children}</div>
 );
 
 export const MetricCard: React.FC<{

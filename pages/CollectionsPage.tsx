@@ -6,6 +6,10 @@ import { Phone, MessageSquare, MapPin, StickyNote, Banknote, Clock, CheckCircle2
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import { Card, PageHeader, EmptyState, Btn } from '../components/ui';
+import { SectionTabs } from '../components/SectionTabs';
+import { NotificationsPage } from './NotificationsPage';
+import { useReveal } from '../lib/motion';
+import { CollectionsSection } from '../lib/nav';
 import { PaymentModal, ActivityModal, WhatsAppDraftModal } from '../components/modals';
 import { bucketLabel, lastActivityFor } from '../lib/engine';
 import { fmtDate, fmtMoney, fmtDateTime } from '../lib/format';
@@ -22,8 +26,12 @@ const TYPE_ICON: Record<string, React.ElementType> = {
   call: Phone, whatsapp: MessageSquare, visit: MapPin, note: StickyNote,
 };
 
-export const CollectionsPage: React.FC = () => {
-  const { stats, loans, installments, clients, activities, settings, profiles } = useData();
+export const CollectionsPage: React.FC<{
+  section: CollectionsSection;
+  onSectionChange: (section: CollectionsSection) => void;
+}> = ({ section, onSectionChange }) => {
+  const { stats, loans, installments, clients, activities, settings, profiles, notifications } = useData();
+  const revealRef = useReveal([section]);
   const { user } = useAuth();
   const cur = settings.currency;
   const [modal, setModal] = useState<ModalState>(null);
@@ -57,12 +65,16 @@ export const CollectionsPage: React.FC = () => {
     }
   };
 
+  const pendingNotifications = notifications.filter(n => n.status === 'pending').length;
+
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6" ref={revealRef}>
       <PageHeader
         title="Cobranza del Día"
-        subtitle="Casos que requieren gestión hoy: vencidos, por vencer hoy y compromisos incumplidos"
-        actions={
+        subtitle={section === 'today'
+          ? 'Casos que requieren gestión hoy: vencidos, por vencer hoy y compromisos incumplidos'
+          : 'Recordatorios automáticos por WhatsApp y correo, con registro de envíos'}
+        actions={section === 'today' ? (
           <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-2xl p-1.5 shadow-sm">
             <button
               onClick={() => setMineOnly(false)}
@@ -77,9 +89,23 @@ export const CollectionsPage: React.FC = () => {
               Mis casos
             </button>
           </div>
-        }
+        ) : undefined}
       />
 
+      <SectionTabs
+        tabs={[
+          { id: 'today', label: 'Casos de hoy', count: queue.length },
+          { id: 'notifications', label: 'Notificaciones', count: pendingNotifications },
+        ]}
+        value={section}
+        onChange={onSectionChange}
+        label="Secciones de cobranza"
+      />
+
+      {section === 'notifications' ? (
+        <NotificationsPage embedded />
+      ) : (
+      <>
       {myProfile && (
         <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
           {user?.role === 'cobrador' ? 'Operas como cobrador' : 'Rol: ' + myProfile.role} — {queue.length} caso(s) en cola
@@ -99,7 +125,7 @@ export const CollectionsPage: React.FC = () => {
             const isBroken = brokenSet.has(loan.id);
 
             return (
-              <Card key={loan.id} className={`p-6 border-2 ${isBroken ? 'border-amber-200 bg-amber-50/30' : row.daysOverdue ? 'border-rose-100 bg-rose-50/20' : 'border-slate-100'}`}>
+              <Card key={loan.id} data-reveal className={`p-6 border-2 ${isBroken ? 'border-amber-200 bg-amber-50/30' : row.daysOverdue ? 'border-rose-100 bg-rose-50/20' : 'border-slate-100'}`}>
                 <div className="flex justify-between items-start mb-4 gap-3">
                   <div className="min-w-0">
                     <h4 className="font-black text-lg text-slate-900 truncate">{client.name}</h4>
@@ -178,6 +204,8 @@ export const CollectionsPage: React.FC = () => {
             );
           })}
         </div>
+      )}
+      </>
       )}
 
       {/* Modales */}

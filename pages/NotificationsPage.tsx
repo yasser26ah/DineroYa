@@ -83,7 +83,7 @@ const TemplateCard: React.FC<{ template: NotificationTemplate; onSave: (t: Notif
 // ---------------------------------------------------------------------------
 // Página
 // ---------------------------------------------------------------------------
-export const NotificationsPage: React.FC = () => {
+export const NotificationsPage: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => {
   const {
     notifications, notificationTemplates, clients, loans, installments, settings,
     createNotification, setNotificationStatus, saveNotificationTemplate,
@@ -178,15 +178,29 @@ export const NotificationsPage: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-8">
-      <PageHeader
-        title="Notificaciones"
-        subtitle="Recordatorios automáticos por WhatsApp y correo, con registro de envíos"
-        actions={
+      {embedded ? (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 className="text-lg font-black text-slate-900">Bandeja y plantillas</h3>
+            <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">
+              {pendingCount} pendiente(s) de envío
+            </p>
+          </div>
           <Btn onClick={generateReminders} disabled={busy} className="flex items-center gap-2">
             <Sparkles className="w-4 h-4" /> {busy ? 'Generando...' : 'Generar recordatorios'}
           </Btn>
-        }
-      />
+        </div>
+      ) : (
+        <PageHeader
+          title="Notificaciones"
+          subtitle="Recordatorios automáticos por WhatsApp y correo, con registro de envíos"
+          actions={
+            <Btn onClick={generateReminders} disabled={busy} className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4" /> {busy ? 'Generando...' : 'Generar recordatorios'}
+            </Btn>
+          }
+        />
+      )}
 
       {(error || msg) && (
         <div className={`p-4 rounded-2xl text-sm font-bold flex items-start gap-2 ${error ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-700'}`}>
@@ -228,7 +242,7 @@ export const NotificationsPage: React.FC = () => {
               {visible.map(n => {
                 const client = clientOf(n);
                 return (
-                  <Card key={n.id} className="p-5">
+                  <Card key={n.id} className="p-5" data-reveal>
                     <div className="flex flex-wrap items-center gap-2 mb-2">
                       <StatusBadge label={NOTIFICATION_STATUS_LABELS[n.status]} className={statusStyle(n.status)} />
                       <span className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-lg ${n.channel === 'whatsapp' ? 'bg-emerald-50 text-emerald-600' : 'bg-sky-50 text-sky-600'}`}>
@@ -271,7 +285,9 @@ export const NotificationsPage: React.FC = () => {
       ) : (
         <div className="flex flex-col gap-4">
           {notificationTemplates.map(t => (
-            <TemplateCard key={t.id} template={t} onSave={saveNotificationTemplate} />
+            <div key={t.id} data-reveal>
+              <TemplateCard template={t} onSave={saveNotificationTemplate} />
+            </div>
           ))}
         </div>
       )}
