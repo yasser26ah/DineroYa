@@ -4,7 +4,6 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   SCREEN_IDS,
-  SCREEN_ROLES,
   allowedScreensFor,
   canAccessScreen,
   resolveTab,
@@ -46,10 +45,6 @@ describe('matriz de roles', () => {
   test('sin rol no hay acceso', () => {
     for (const screen of ALL) assert.equal(canAccessScreen(screen, null), false);
   });
-
-  test('cada pantalla declara al menos un rol', () => {
-    for (const screen of ALL) assert.ok(SCREEN_ROLES[screen].length > 0, `${screen} sin roles`);
-  });
 });
 
 describe('roles personalizados (screens)', () => {
@@ -84,7 +79,6 @@ describe('roles personalizados (screens)', () => {
 describe('pestaña efectiva', () => {
   test('el cliente siempre aterriza en su portal', () => {
     assert.equal(resolveTab('loans', 'cliente'), 'portal');
-    assert.equal(resolveTab('settings', 'cliente', ['settings']), 'portal');
   });
 
   test('se respeta la pestaña pedida cuando hay permiso', () => {

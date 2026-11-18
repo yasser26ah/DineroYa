@@ -6,12 +6,7 @@
 import type { TabId } from './nav';
 import type { UserRole } from '../types';
 
-export const SCREEN_IDS: TabId[] = [
-  'portal', 'dashboard', 'collections', 'loans', 'payments',
-  'reports', 'clients', 'applications', 'team', 'settings',
-];
-
-/** Roles que pueden ver cada pantalla. */
+/** Roles que pueden ver cada pantalla. Es también la lista de pantallas. */
 export const SCREEN_ROLES: Record<TabId, UserRole[]> = {
   portal: ['cliente'],
   dashboard: ['admin', 'gerente', 'cobrador'],
@@ -30,7 +25,9 @@ const LEGACY_SCREEN_ALIASES: Record<string, TabId> = {
   audit: 'settings',
 };
 
-const isScreenId = (id: string): id is TabId => (SCREEN_IDS as string[]).includes(id);
+export const SCREEN_IDS = Object.keys(SCREEN_ROLES) as TabId[];
+
+const isScreenId = (id: string): id is TabId => Object.hasOwn(SCREEN_ROLES, id);
 
 /**
  * Pantallas permitidas de un rol personalizado.

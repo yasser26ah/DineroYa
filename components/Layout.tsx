@@ -10,14 +10,13 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
-import { UserRole } from '../types';
 import { initials } from '../lib/format';
 import { sameTarget } from '../lib/nav';
 import type { NavTarget, TabId } from '../lib/nav';
 import { AnimatedIcon, IconMotionKind } from './AnimatedIcon';
 import { animateDrawer, revealSubitems } from '../lib/motion';
 import { useMediaQuery } from '../lib/useMediaQuery';
-import { SCREEN_ROLES, canAccessScreen } from '../lib/access';
+import { canAccessScreen } from '../lib/access';
 
 interface NavChild {
   id: string;
@@ -31,7 +30,6 @@ interface NavItem {
   id: TabId;
   label: string;
   icon: React.ElementType;
-  roles: UserRole[];
   kind?: IconMotionKind;
   children?: NavChild[];
 }
@@ -162,13 +160,12 @@ export const Layout: React.FC<{
   const canManageChannels = user?.role === 'admin' || user?.role === 'gerente';
 
   const items: NavItem[] = [
-    { id: 'portal', label: 'Mi portal', icon: Home, roles: SCREEN_ROLES.portal },
-    { id: 'dashboard', label: 'Resumen global', icon: PieChart, roles: SCREEN_ROLES.dashboard },
+    { id: 'portal', label: 'Mi portal', icon: Home },
+    { id: 'dashboard', label: 'Resumen global', icon: PieChart },
     {
       id: 'collections',
       label: 'Cobranza del Día',
       icon: HandCoins,
-      roles: SCREEN_ROLES.collections,
       kind: 'bell',
       children: [
         { id: 'collections-today', label: 'Casos de hoy', icon: HandCoins, target: { tab: 'collections', collections: 'today', settings: 'general' } },
@@ -181,17 +178,16 @@ export const Layout: React.FC<{
         },
       ],
     },
-    { id: 'loans', label: 'Préstamos', icon: Wallet, roles: SCREEN_ROLES.loans },
-    { id: 'payments', label: 'Recaudos', icon: Banknote, roles: SCREEN_ROLES.payments },
-    { id: 'clients', label: 'Clientes', icon: Users, roles: SCREEN_ROLES.clients },
-    { id: 'applications', label: 'Solicitudes', icon: ClipboardList, roles: SCREEN_ROLES.applications },
-    { id: 'reports', label: 'Reportes', icon: BarChart3, roles: SCREEN_ROLES.reports },
-    { id: 'team', label: 'Equipo', icon: Users, roles: SCREEN_ROLES.team },
+    { id: 'loans', label: 'Préstamos', icon: Wallet },
+    { id: 'payments', label: 'Recaudos', icon: Banknote },
+    { id: 'clients', label: 'Clientes', icon: Users },
+    { id: 'applications', label: 'Solicitudes', icon: ClipboardList },
+    { id: 'reports', label: 'Reportes', icon: BarChart3 },
+    { id: 'team', label: 'Equipo', icon: Users },
     {
       id: 'settings',
       label: 'Configuración',
       icon: Settings,
-      roles: SCREEN_ROLES.settings,
       kind: 'gear',
       children: canManageChannels
         ? [
