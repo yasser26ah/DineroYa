@@ -15,14 +15,14 @@ import { initials } from '../lib/format';
 import { sameTarget } from '../lib/nav';
 import type { NavTarget, TabId } from '../lib/nav';
 import { AnimatedIcon, IconMotionKind } from './AnimatedIcon';
-import { animateDrawer, fadeIn, prefersReducedMotion, revealSubitems } from '../lib/motion';
+import { animateDrawer, revealSubitems } from '../lib/motion';
+import { useMediaQuery } from '../lib/useMediaQuery';
 
 interface NavChild {
   id: string;
   label: string;
   icon: React.ElementType;
   target: NavTarget;
-  roles?: UserRole[];
   badge?: number;
 }
 
@@ -45,8 +45,6 @@ const targetFor = (tab: TabId, current: NavTarget): NavTarget => {
   if (tab === 'settings') return { ...current, tab, settings: 'general' };
   return { ...current, tab };
 };
-
-const subitemTarget = (child: NavChild, current: NavTarget): NavTarget => ({ ...current, ...child.target });
 
 const MenuItem: React.FC<{
   item: NavItem;
@@ -79,7 +77,7 @@ const MenuItem: React.FC<{
         type="button"
         onClick={() => go(targetFor(item.id, current))}
         aria-current={isActive ? 'page' : undefined}
-        className={`w-full flex items-center gap-4 px-5 py-3 rounded-2xl transition-colors font-bold text-sm ${
+        className={`w-full flex items-center gap-4 px-5 py-3 rounded-2xl transition-colors font-bold text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0F172A] ${
           isActive
             ? 'bg-indigo-600 shadow-lg shadow-indigo-600/20 text-white'
             : 'text-slate-400 hover:text-white hover:bg-slate-800'
@@ -102,27 +100,31 @@ const MenuItem: React.FC<{
 
       {isActive && visibleChildren.length > 0 && (
         <div ref={childrenRef} className="mt-1 ml-5 pl-4 border-l border-slate-800 flex flex-col gap-0.5">
-          {visibleChildren.map(child => (
-            <button
-              key={child.id}
-              type="button"
-              data-subitem
-              onClick={() => go(subitemTarget(child, current))}
-              className={`flex items-center gap-3 px-3 py-2 rounded-xl text-[12px] font-bold transition-colors ${
-                sameTarget(current, subitemTarget(child, current))
-                  ? 'text-white bg-slate-800'
-                  : 'text-slate-500 hover:text-slate-200 hover:bg-slate-800/60'
-              }`}
-            >
-              <child.icon className="w-3.5 h-3.5 shrink-0" />
-              <span className="truncate">{child.label}</span>
-              {typeof child.badge === 'number' && child.badge > 0 && (
-                <span className="ml-auto min-w-4 h-4 px-1 rounded-full bg-rose-500/90 text-white text-[9px] font-black flex items-center justify-center">
-                  {child.badge}
-                </span>
-              )}
-            </button>
-          ))}
+          {visibleChildren.map(child => {
+            const target = { ...current, ...child.target };
+            return (
+              <button
+                key={child.id}
+                type="button"
+                data-subitem
+                onClick={() => go(target)}
+                aria-current={sameTarget(current, target) ? 'page' : undefined}
+                className={`flex items-center gap-3 px-3 py-2 rounded-xl text-[12px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 ${
+                  sameTarget(current, target)
+                    ? 'text-white bg-slate-800'
+                    : 'text-slate-500 hover:text-slate-200 hover:bg-slate-800/60'
+                }`}
+              >
+                <child.icon className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">{child.label}</span>
+                {typeof child.badge === 'number' && child.badge > 0 && (
+                  <span className="ml-auto min-w-4 h-4 px-1 rounded-full bg-rose-500/90 text-white text-[9px] font-black flex items-center justify-center">
+                    {child.badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
@@ -140,11 +142,20 @@ export const Layout: React.FC<{
   const [isOpen, setIsOpen] = useState(false);
 
   const asideRef = useRef<HTMLElement>(null);
-  const overlayRef = useRef<HTMLDivElement>(null);
+  const openButtonRef = useRef<HTMLButtonElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
   const drawerReady = useRef(false);
-  const [isDesktop, setIsDesktop] = useState(() =>
-    typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches,
-  );
+  const isDesktop = useMediaQuery('(min-width: 1024px)');
+
+  // En móvil, cerrado significa inerte: nada de su interior recibe foco.
+  const drawerHidden = !isDesktop && !isOpen;
+
+  const restoreFocus = useRef(false);
+
+  const closeDrawer = () => {
+    restoreFocus.current = asideRef.current?.contains(document.activeElement) ?? false;
+    setIsOpen(false);
+  };
 
   const pendingNotifications = notifications.filter(n => n.status === 'pending').length;
   const canManageChannels = user ? user.role === 'admin' || user.role === 'gerente' : false;
@@ -181,24 +192,12 @@ export const Layout: React.FC<{
       icon: Settings,
       roles: ['admin', 'gerente', 'cobrador'],
       kind: 'gear',
-      children: [
-        ...(canManageChannels
-          ? [{
-            id: 'settings-channels',
-            label: 'Canales de pago',
-            icon: CreditCard,
-            target: { tab: 'settings', settings: 'channels', collections: 'today' } as NavTarget,
-          }]
-          : []),
-        ...(canManageChannels
-          ? [{
-            id: 'settings-log',
-            label: 'Log',
-            icon: ScrollText,
-            target: { tab: 'settings', settings: 'log', collections: 'today' } as NavTarget,
-          }]
-          : []),
-      ],
+      children: canManageChannels
+        ? [
+          { id: 'settings-channels', label: 'Canales de pago', icon: CreditCard, target: { tab: 'settings', settings: 'channels', collections: 'today' } },
+          { id: 'settings-log', label: 'Log', icon: ScrollText, target: { tab: 'settings', settings: 'log', collections: 'today' } },
+        ]
+        : [],
     },
   ];
 
@@ -219,13 +218,6 @@ export const Layout: React.FC<{
 
   // Drawer móvil con resorte. El transform lo controla Anime.js: Tailwind v4
   // usa la propiedad `translate`, que se sumaría a nuestro `transform`.
-  useEffect(() => {
-    const mq = window.matchMedia('(min-width: 1024px)');
-    const onChange = () => setIsDesktop(mq.matches);
-    mq.addEventListener('change', onChange);
-    return () => mq.removeEventListener('change', onChange);
-  }, []);
-
   useLayoutEffect(() => {
     const el = asideRef.current;
     if (!el) return;
@@ -246,16 +238,37 @@ export const Layout: React.FC<{
     };
   }, [isOpen, isDesktop]);
 
+  // Abrir: el foco entra al drawer y el fondo deja de desplazarse.
   useEffect(() => {
-    if (!isOpen || !overlayRef.current) return;
-    if (prefersReducedMotion()) return;
-    const animation = fadeIn(overlayRef.current);
+    if (isDesktop || !isOpen) return;
+    closeButtonRef.current?.focus();
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
     return () => {
-      animation?.pause();
+      document.body.style.overflow = previousOverflow;
     };
-  }, [isOpen]);
+  }, [isOpen, isDesktop]);
 
-  const closeDrawer = () => setIsOpen(false);
+  // Al cerrar, el foco vuelve al botón que abrió el drawer (nunca se pierde).
+  useEffect(() => {
+    if (isOpen || isDesktop || !restoreFocus.current) return;
+    restoreFocus.current = false;
+    openButtonRef.current?.focus();
+  }, [isOpen, isDesktop]);
+
+  // Escape cierra el drawer, como cualquier capa modal.
+  useEffect(() => {
+    if (isDesktop || !isOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeDrawer();
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [isOpen, isDesktop]);
+
   const navigate = (target: NavTarget) => onNavigate(target);
 
   return (
@@ -263,6 +276,12 @@ export const Layout: React.FC<{
       {/* Sidebar / drawer */}
       <aside
         ref={asideRef}
+        id="app-drawer"
+        aria-label="Menú principal"
+        role={isDesktop ? undefined : 'dialog'}
+        aria-modal={!isDesktop && isOpen ? true : undefined}
+        aria-hidden={drawerHidden || undefined}
+        inert={drawerHidden || undefined}
         className="fixed inset-y-0 left-0 z-50 w-72 bg-[#0F172A] flex flex-col p-6 lg:p-8 text-white lg:static"
       >
         <div className="flex items-center justify-between mb-8 shrink-0">
@@ -272,7 +291,12 @@ export const Layout: React.FC<{
             </div>
             <h1 className="text-lg font-black tracking-tight truncate">DineroYa</h1>
           </div>
-          <button onClick={closeDrawer} className="lg:hidden p-1" aria-label="Cerrar menú">
+          <button
+            ref={closeButtonRef}
+            onClick={closeDrawer}
+            className="lg:hidden p-1 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+            aria-label="Cerrar menú"
+          >
             <X className="w-6 h-6" />
           </button>
         </div>
@@ -320,24 +344,27 @@ export const Layout: React.FC<{
           </div>
           <button
             onClick={signOut}
-            className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl bg-rose-500/10 text-rose-300 hover:bg-rose-500/20 hover:text-rose-200 transition font-black text-[11px] uppercase tracking-widest"
+            className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl bg-rose-500/10 text-rose-300 hover:bg-rose-500/20 hover:text-rose-200 transition font-black text-[11px] uppercase tracking-widest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300"
           >
             <LogOut className="w-4 h-4" /> Cerrar sesión
           </button>
         </div>
       </aside>
 
-      {/* Overlay móvil */}
-      {isOpen && (
-        <div
-          ref={overlayRef}
-          className="fixed inset-0 z-40 bg-slate-900/50 lg:hidden"
-          onClick={closeDrawer}
-          aria-hidden="true"
-        />
-      )}
+      {/* Velo móvil: siempre montado, visible solo con el drawer abierto. */}
+      <div
+        className={`fixed inset-0 z-40 bg-slate-900/50 transition-opacity duration-200 lg:hidden ${
+          isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
+        onClick={closeDrawer}
+        aria-hidden="true"
+      />
 
-      <main className="flex-1 overflow-y-auto min-w-0">
+      <main
+        className="flex-1 overflow-y-auto min-w-0"
+        inert={!isDesktop && isOpen ? true : undefined}
+        aria-hidden={!isDesktop && isOpen ? true : undefined}
+      >
         {/* Cabecera móvil: salir siempre a un toque, sin submenús */}
         <header className="lg:hidden sticky top-0 z-30 bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 min-w-0">
@@ -349,15 +376,18 @@ export const Layout: React.FC<{
           <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={signOut}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-50 text-rose-600 text-[10px] font-black uppercase tracking-widest active:scale-95 transition-transform"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-50 text-rose-600 text-[10px] font-black uppercase tracking-widest active:scale-95 transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
               aria-label="Cerrar sesión"
             >
               <LogOut className="w-4 h-4" /> Salir
             </button>
             <button
+              ref={openButtonRef}
               onClick={() => setIsOpen(true)}
-              className="p-2 bg-slate-100 rounded-lg"
+              className="p-2 bg-slate-100 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
               aria-label="Abrir menú"
+              aria-controls="app-drawer"
+              aria-expanded={isOpen}
             >
               <Menu className="w-6 h-6 text-slate-600" />
             </button>

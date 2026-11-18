@@ -23,7 +23,7 @@ import { ClientPortalPage } from './pages/ClientPortalPage';
 import { ApplicationsPage } from './pages/ApplicationsPage';
 import { PaymentsPage } from './pages/PaymentsPage';
 import { ReportsPage } from './pages/ReportsPage';
-import { DEFAULT_TARGET, isLegacyRoute, targetFromHash, targetToHash } from './lib/nav';
+import { DEFAULT_TARGET, targetFromHash, targetToHash } from './lib/nav';
 import type { NavTarget, TabId } from './lib/nav';
 
 const ErrorBanner: React.FC<{ message: string; onRetry: () => void }> = ({ message, onRetry }) => (
@@ -118,28 +118,16 @@ const Shell: React.FC = () => {
     if (window.location.hash !== hash) window.history.pushState(null, '', hash);
   }, []);
 
-  // Normaliza una ruta heredada al montar (p. ej. #/notificaciones).
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const legacy = isLegacyRoute(window.location.hash);
-    const expected = targetToHash(targetFromHash(window.location.hash));
-    if (legacy || window.location.hash !== expected) {
-      window.history.replaceState(null, '', expected);
-    }
-  }, []);
-
-  // Atrás/adelante del navegador.
+  // Una sola sincronización: hash actual, rutas heredadas y atrás/adelante.
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const sync = () => {
       const next = targetFromHash(window.location.hash);
       setTarget(next);
-      // Reescribe las rutas heredadas a su forma canónica, sin recargar.
       const canonical = targetToHash(next);
-      if (isLegacyRoute(window.location.hash) && window.location.hash !== canonical) {
-        window.history.replaceState(null, '', canonical);
-      }
+      if (window.location.hash !== canonical) window.history.replaceState(null, '', canonical);
     };
+    sync();
     window.addEventListener('hashchange', sync);
     window.addEventListener('popstate', sync);
     return () => {

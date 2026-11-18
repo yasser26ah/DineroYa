@@ -17,13 +17,10 @@ export const SPRINGS = {
   settle: { stiffness: 190, damping: 22, mass: 1 },
   /** Tap: elástico, duración percibida corta. */
   pop: { bounce: 0.45, duration: 380 },
-  /** Badge de notificaciones: rebote visible. */
-  badge: { bounce: 0.6, duration: 560 },
 } as const;
 
 export const EASES = {
   enter: 'out(3)',
-  exit: 'in(2)',
   swing: 'inOut(2)',
 } as const;
 
@@ -121,11 +118,6 @@ export function animateDrawer(el: HTMLElement | null, open: boolean): JSAnimatio
     duration: 520,
     ease: spring(SPRINGS.tactile),
   });
-}
-
-/** Fundido de entrada para el velo del drawer. */
-export function fadeIn(el: Element | null): JSAnimation | null {
-  return play(el, { opacity: [0, 1], duration: 220, ease: EASES.enter });
 }
 
 /** Sub-opciones de un menú: despliegue escalonado. */

@@ -83,19 +83,6 @@ const SETTINGS_BY_SLUG: Record<string, SettingsSection> = {
   datos: 'data',
 };
 
-export const TAB_LABELS: Record<TabId, string> = {
-  portal: 'Mi portal',
-  dashboard: 'Resumen global',
-  collections: 'Cobranza del Día',
-  loans: 'Préstamos',
-  payments: 'Recaudos',
-  reports: 'Reportes',
-  clients: 'Clientes',
-  applications: 'Solicitudes',
-  team: 'Equipo',
-  settings: 'Configuración',
-};
-
 /** Ruta canónica de un destino (hash estable y compartible). */
 export function targetToHash(target: NavTarget): string {
   const base = `#/${TAB_SLUGS[target.tab]}`;
@@ -128,12 +115,6 @@ export function targetFromHash(hash: string): NavTarget {
   if (tab === 'collections' && second === 'notificaciones') target.collections = 'notifications';
   if (tab === 'settings' && second) target.settings = SETTINGS_BY_SLUG[second] ?? 'general';
   return target;
-}
-
-/** ¿El hash entrante apunta a una ruta que ya no existe con ese nombre? */
-export function isLegacyRoute(hash: string): boolean {
-  const first = (hash || '').replace(/^#/, '').replace(/^\/+/, '').toLowerCase().split('/')[0];
-  return Boolean(first && LEGACY_TABS[first]);
 }
 
 export const sameTarget = (a: NavTarget, b: NavTarget): boolean =>
