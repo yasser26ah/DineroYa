@@ -9,11 +9,12 @@ import { daysBetween, fmtDate, fmtMoney, todayISO } from '../lib/format';
 import { loanOutstanding } from '../lib/engine';
 import { FREQUENCY_LABELS, INSTALLMENT_STATUS_LABELS, LOAN_STATUS_LABELS, paymentMethodLabel } from '../types';
 
-type ReportId = 'resumen' | 'recaudos' | 'cartera' | 'mora' | 'desembolsos';
+type ReportId = 'resumen' | 'recaudos' | 'arqueo' | 'cartera' | 'mora' | 'desembolsos';
 
 const REPORTS: { id: ReportId; label: string; hint: string }[] = [
   { id: 'resumen', label: 'Resumen contable', hint: 'Capital colocado, recaudo y cartera del rango' },
   { id: 'recaudos', label: 'Recaudos', hint: 'Cada pago con método y cobrador' },
+  { id: 'arqueo', label: 'Cierre de recaudos', hint: 'Efectivo y otros medios por cobrador, para cuadrar la caja del día' },
   { id: 'cartera', label: 'Cartera', hint: 'Saldo por préstamo y estado' },
   { id: 'mora', label: 'Mora', hint: 'Cuotas vencidas y días de atraso' },
   { id: 'desembolsos', label: 'Préstamos otorgados', hint: 'Desembolsos del rango' },
@@ -64,6 +65,46 @@ export const ReportsPage: React.FC = () => {
           collectorName(p.receivedBy), p.amount, p.notes?.includes('ANULADO') ? 'Anulado' : 'Vigente',
         ]),
         totals: [['Total recaudado', money(total)] as (string | number)[]],
+      };
+    }
+
+    if (report === 'arqueo') {
+      const isCash = (method: string) => {
+        const label = paymentMethodLabel(method, paymentMethods).toLowerCase();
+        return method === 'cash' || label.includes('efectivo');
+      };
+      const live = payments.filter(p => inRange(p.paymentDate) && !p.notes?.includes('ANULADO'));
+      const voided = payments.filter(p => inRange(p.paymentDate) && p.notes?.includes('ANULADO'));
+
+      const byCollector = new Map<string, { cash: number; other: number; count: number; voided: number }>();
+      const bucket = (key: string) => {
+        const acc = byCollector.get(key) ?? { cash: 0, other: 0, count: 0, voided: 0 };
+        byCollector.set(key, acc);
+        return acc;
+      };
+      live.forEach(p => {
+        const acc = bucket(p.receivedBy ?? 'none');
+        if (isCash(p.method)) acc.cash += p.amount;
+        else acc.other += p.amount;
+        acc.count += 1;
+      });
+      voided.forEach(p => { bucket(p.receivedBy ?? 'none').voided += 1; });
+
+      const list = [...byCollector.entries()].sort((a, b) => (b[1].cash + b[1].other) - (a[1].cash + a[1].other));
+      const totalCash = list.reduce((acc, [, v]) => acc + v.cash, 0);
+      const totalOther = list.reduce((acc, [, v]) => acc + v.other, 0);
+
+      return {
+        headers: ['Cobrador', 'Efectivo', 'Otros medios', 'Total', 'Pagos', 'Anulados'],
+        rows: list.map(([key, v]) => [
+          key === 'none' ? 'Sin cobrador' : collectorName(key),
+          v.cash, v.other, v.cash + v.other, num(v.count), num(v.voided),
+        ]),
+        totals: [
+          ['Total en efectivo', money(totalCash)],
+          ['Total otros medios', money(totalOther)],
+          ['Total del rango', money(totalCash + totalOther)],
+        ] as (string | number)[][],
       };
     }
 

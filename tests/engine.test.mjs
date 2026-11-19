@@ -15,6 +15,7 @@ import {
   restructureSchedule,
   splitInstallmentsForRestructure,
   buildPromiseAgenda,
+  scoreCreditApplication,
 } from '../.local/test-build/modules.mjs';
 
 const loan = (overrides = {}) => ({
@@ -126,6 +127,57 @@ test('la mora no se cobra sobre cuotas pagadas ni préstamos cancelados', () => 
 test('la mora no se mezcla entre clientes', () => {
   const installments = [installment({ dueDate: '2026-01-01' })];
   assert.equal(clientMoraAmount('c2', [loan()], installments, 5, '2026-01-31'), 0);
+});
+
+// --- Evaluación de solicitudes ---------------------------------------------
+
+test('una solicitud sin ficha vinculada queda para revisión manual', () => {
+  const result = scoreCreditApplication({ requestedAmount: 500000 }, [], [], [], '2026-01-15');
+  assert.equal(result.recommendation, 'review');
+  assert.equal(result.score, 60);
+  assert.equal(result.currentOutstanding, 0);
+  assert.match(result.reasons[0], /Sin ficha/);
+});
+
+test('un cliente con historial pagado es apto para aprobar', () => {
+  const result = scoreCreditApplication(
+    { requestedAmount: 500, clientId: 'c1', createdAt: '2026-01-10' },
+    [client],
+    [loan({ status: 'paid' })],
+    [installment({ status: 'paid', amountPaid: 1000 })],
+    '2026-01-15',
+  );
+  assert.equal(result.score, 73);
+  assert.equal(result.recommendation, 'approve');
+  assert.equal(result.daysWaiting, 5);
+});
+
+test('la mora vigente desaconseja aprobar una solicitud nueva', () => {
+  const installments = [installment({ dueDate: '2025-12-01', status: 'pending' })];
+  const result = scoreCreditApplication(
+    { requestedAmount: 5000, clientId: 'c1' },
+    [client],
+    [loan({ status: 'overdue' })],
+    installments,
+    '2026-01-15',
+  );
+  assert.equal(result.recommendation, 'reject');
+  assert.ok(result.score < 45);
+  assert.ok(result.reasons.some(r => /vencidas/.test(r)));
+  assert.equal(result.currentOutstanding, 1000);
+});
+
+test('pedir más del doble del crédito más alto baja la recomendación', () => {
+  const maxLoan = loan({ status: 'paid', principal: 1000 });
+  const paidInstallments = [installment({ status: 'paid', amountPaid: 1000 })];
+  const normal = scoreCreditApplication(
+    { requestedAmount: 1000, clientId: 'c1' }, [client], [maxLoan], paidInstallments, '2026-01-15',
+  );
+  const huge = scoreCreditApplication(
+    { requestedAmount: 5000, clientId: 'c1' }, [client], [maxLoan], paidInstallments, '2026-01-15',
+  );
+  assert.equal(normal.score - huge.score, 15);
+  assert.ok(huge.reasons.some(r => /doble/.test(r)));
 });
 
 // --- Agenda de promesas ----------------------------------------------------

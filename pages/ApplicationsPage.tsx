@@ -10,7 +10,8 @@ import {
   Btn, Card, EmptyState, Field, Modal, PageHeader, SearchBar, StatusBadge, inputCls,
 } from '../components/ui';
 import { CreateLoanModal } from '../components/modals';
-import { fmtDate, fmtDateTime, fmtMoney } from '../lib/format';
+import { fmtDate, fmtDateTime, fmtMoney, todayISO } from '../lib/format';
+import { scoreCreditApplication } from '../lib/engine';
 import {
   CREDIT_APPLICATION_STATUS_LABELS, CreditApplication, CreditApplicationStatus,
 } from '../types';
@@ -29,7 +30,7 @@ const FILTERS: { id: 'all' | CreditApplicationStatus; label: string }[] = [
 ];
 
 export const ApplicationsPage: React.FC = () => {
-  const { applications, clients, settings, updateApplicationStatus } = useData();
+  const { applications, clients, loans, installments, settings, updateApplicationStatus } = useData();
   const [filter, setFilter] = useState<'all' | CreditApplicationStatus>('pending');
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<CreditApplication | null>(null);
@@ -54,6 +55,19 @@ export const ApplicationsPage: React.FC = () => {
     }
     return list;
   }, [applications, filter, search]);
+
+  // Recomendación explicable por solicitud: riesgo, mora y tamaño del crédito.
+  const scores = useMemo(() => {
+    const map = new Map<string, ReturnType<typeof scoreCreditApplication>>();
+    const today = todayISO();
+    applications.forEach(app => {
+      map.set(app.id, scoreCreditApplication(
+        { requestedAmount: app.requestedAmount, clientId: app.clientId, createdAt: app.createdAt },
+        clients, loans, installments, today,
+      ));
+    });
+    return map;
+  }, [applications, clients, loans, installments]);
 
   const clientName = (a: CreditApplication) =>
     a.clientId ? clients.find(c => c.id === a.clientId)?.name : undefined;
@@ -154,6 +168,36 @@ export const ApplicationsPage: React.FC = () => {
                 {app.address && <p className="flex items-center gap-2"><MapPin className="w-3.5 h-3.5 text-slate-400" /> {app.address}</p>}
                 <p className="flex items-center gap-2"><Clock className="w-3.5 h-3.5 text-slate-400" /> {fmtDateTime(app.createdAt)}</p>
               </div>
+
+              {app.status === 'pending' && scores.get(app.id) && (() => {
+                const s = scores.get(app.id)!;
+                const tone = s.recommendation === 'approve'
+                  ? 'bg-emerald-50 border-emerald-100 text-emerald-800'
+                  : s.recommendation === 'reject'
+                    ? 'bg-rose-50 border-rose-100 text-rose-800'
+                    : 'bg-amber-50 border-amber-100 text-amber-800';
+                const label = s.recommendation === 'approve'
+                  ? 'Apto para aprobar'
+                  : s.recommendation === 'reject' ? 'Mejor no aprobar' : 'Revisar antes de decidir';
+                return (
+                  <div className={`rounded-2xl border p-3 mb-3 ${tone}`}>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-[10px] font-black uppercase tracking-widest">{label}</p>
+                      <p className="text-xs font-black">{s.score}/100</p>
+                    </div>
+                    {s.daysWaiting > 0 && (
+                      <p className="text-[11px] font-bold mt-1 opacity-80">
+                        Lleva {s.daysWaiting} día(s) esperando respuesta
+                      </p>
+                    )}
+                    <ul className="mt-2 space-y-1">
+                      {s.reasons.map(reason => (
+                        <li key={reason} className="text-[11px] font-medium leading-relaxed opacity-90">· {reason}</li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })()}
 
               {app.purpose && (
                 <p className="text-xs font-medium text-slate-600 bg-slate-50 rounded-xl p-3 mb-3">

@@ -401,6 +401,85 @@ export const buildPromiseAgenda = (
   return rows.sort((a, b) => b.daysLate - a.daysLate || a.clientName.localeCompare(b.clientName));
 };
 
+// --- Evaluación de solicitudes ----------------------------------------------
+
+export interface ApplicationScore {
+  /** 0–100: más alto es mejor candidato. */
+  score: number;
+  recommendation: 'approve' | 'review' | 'reject';
+  /** Motivos legibles, para justificar la decisión. */
+  reasons: string[];
+  currentOutstanding: number;
+  daysWaiting: number;
+}
+
+/**
+ * Recomendación explicable para una solicitud: cruza riesgo del cliente,
+ * saldo vigente, mora y tamaño del crédito pedido frente a su historial.
+ * No decide nada por sí sola: ordena la revisión y deja por escrito el porqué.
+ */
+export const scoreCreditApplication = (
+  input: { requestedAmount: number; clientId?: string | null; createdAt?: string },
+  clients: Client[],
+  loans: Loan[],
+  installments: Installment[],
+  today = todayISO(),
+): ApplicationScore => {
+  const requested = Number(input.requestedAmount) || 0;
+  const reasons: string[] = [];
+  let score = 60;
+  let currentOutstanding = 0;
+
+  const client = input.clientId ? clients.find(c => c.id === input.clientId) : undefined;
+
+  if (!client) {
+    reasons.push('Sin ficha de cliente vinculada: no hay historial que consultar.');
+  } else {
+    const clientLoans = loans.filter(l => l.clientId === client.id && l.status !== 'cancelled');
+    const activeLoans = clientLoans.filter(l => l.status === 'active' || l.status === 'overdue');
+    const risk = computeRiskScore(client.id, loans, installments);
+    score = Math.round(40 + risk * 0.5);
+    reasons.push(`Riesgo actual del cliente: ${risk}/100.`);
+
+    currentOutstanding = activeLoans.reduce((acc, l) => acc + loanOutstanding(l.id, installments), 0);
+
+    const overdue = activeLoans.reduce((acc, l) => {
+      return acc + installments
+        .filter(i => i.loanId === l.id && i.dueDate < today && i.status !== 'paid' && i.status !== 'waived')
+        .reduce((sum, i) => sum + (i.amountDue - i.amountPaid), 0);
+    }, 0);
+
+    if (overdue > 0) {
+      score -= 30;
+      reasons.push(`Tiene cuotas vencidas por ${overdue.toFixed(2)}: cobrar antes de prestar más.`);
+    }
+
+    if (currentOutstanding > 0) {
+      reasons.push(`Saldo vigente con la financiera: ${currentOutstanding.toFixed(2)}.`);
+    }
+
+    const maxPrincipal = clientLoans.reduce((max, l) => Math.max(max, l.principal), 0);
+    if (maxPrincipal > 0 && requested > maxPrincipal * 2) {
+      score -= 15;
+      reasons.push('Pide más del doble de su crédito más alto: revisa capacidad de pago.');
+    }
+
+    const overdueCount = clientLoans.filter(l => l.status === 'overdue').length;
+    if (overdueCount > 0) {
+      score -= 10;
+      reasons.push(`${overdueCount} préstamo(s) marcados como vencidos.`);
+    }
+  }
+
+  score = Math.max(1, Math.min(100, score));
+  const recommendation: ApplicationScore['recommendation'] =
+    score >= 70 ? 'approve' : score >= 45 ? 'review' : 'reject';
+
+  const daysWaiting = input.createdAt ? Math.max(0, daysBetween(input.createdAt.slice(0, 10), today)) : 0;
+
+  return { score, recommendation, reasons, currentOutstanding, daysWaiting };
+};
+
 // --- Resumen de cartera -----------------------------------------------------------
 
 export const buildPortfolioSummary = (
