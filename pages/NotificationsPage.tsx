@@ -4,7 +4,7 @@
 import React, { useMemo, useState } from 'react';
 import { Bell, Check, Copy, Mail, MessageCircle, Sparkles, X } from 'lucide-react';
 import { useData } from '../context/DataContext';
-import { Btn, Card, EmptyState, Field, PageHeader, StatusBadge, inputCls } from '../components/ui';
+import { Btn, Card, EmptyState, Field, Modal, PageHeader, StatusBadge, inputCls } from '../components/ui';
 import { fmtDate, fmtMoney, todayISO, waLink } from '../lib/format';
 import {
   NOTIFICATION_CHANNEL_LABELS, NOTIFICATION_STATUS_LABELS, AppNotification, NotificationTemplate,
@@ -95,6 +95,8 @@ export const NotificationsPage: React.FC<{ embedded?: boolean }> = ({ embedded =
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  // Envío guiado: recorre la bandeja pendiente de a uno, sin abrir 20 pestañas.
+  const [queueIndex, setQueueIndex] = useState<number | null>(null);
 
   const clientOf = (n: AppNotification) => clients.find(c => c.id === n.clientId);
 
@@ -106,6 +108,10 @@ export const NotificationsPage: React.FC<{ embedded?: boolean }> = ({ embedded =
   );
 
   const pendingCount = notifications.filter(n => n.status === 'pending').length;
+  const pendingList = notifications
+    .filter(n => n.status === 'pending')
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  const queueItem = queueIndex !== null ? pendingList[queueIndex] ?? null : null;
 
   /** Automatización: crea recordatorios para cuotas vencidas o que vencen en 3 días. */
   const generateReminders = async () => {
@@ -186,9 +192,19 @@ export const NotificationsPage: React.FC<{ embedded?: boolean }> = ({ embedded =
               {pendingCount} pendiente(s) de envío
             </p>
           </div>
-          <Btn onClick={generateReminders} disabled={busy} className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4" /> {busy ? 'Generando...' : 'Generar recordatorios'}
-          </Btn>
+          <div className="flex flex-wrap items-center gap-2">
+            <Btn onClick={generateReminders} disabled={busy} className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4" /> {busy ? 'Generando...' : 'Generar recordatorios'}
+            </Btn>
+            <Btn
+              variant="secondary"
+              onClick={() => setQueueIndex(0)}
+              disabled={pendingList.length === 0}
+              className="flex items-center gap-2"
+            >
+              <MessageCircle className="w-4 h-4" /> Enviar pendientes ({pendingList.length})
+            </Btn>
+          </div>
         </div>
       ) : (
         <PageHeader
@@ -207,6 +223,44 @@ export const NotificationsPage: React.FC<{ embedded?: boolean }> = ({ embedded =
           {error ? <X className="w-4 h-4 mt-0.5 shrink-0" /> : <Check className="w-4 h-4 mt-0.5 shrink-0" />}
           {error ?? msg}
         </div>
+      )}
+
+      {queueIndex !== null && (
+        <Modal
+          title="Envío de recordatorios"
+          subtitle={`${Math.min(queueIndex + 1, pendingList.length)} de ${pendingList.length} pendientes`}
+          onClose={() => setQueueIndex(null)}
+        >
+          {!queueItem ? (
+            <div className="text-center py-6">
+              <Check className="w-10 h-10 text-emerald-500 mx-auto mb-3" />
+              <p className="font-black text-slate-800">No quedan recordatorios pendientes</p>
+              <Btn onClick={() => setQueueIndex(null)} className="mt-4">Cerrar</Btn>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-4">
+              <div className="bg-slate-50 rounded-2xl p-4">
+                <p className="font-black text-slate-800">{clientOf(queueItem)?.name ?? 'Cliente'}</p>
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+                  {NOTIFICATION_CHANNEL_LABELS[queueItem.channel]} · {queueItem.title}
+                </p>
+                <p className="text-sm text-slate-600 font-medium mt-3 whitespace-pre-wrap">{queueItem.body}</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Btn onClick={() => { void send(queueItem); }} className="flex-1 flex items-center justify-center gap-1.5">
+                  <MessageCircle className="w-4 h-4" /> Enviar
+                </Btn>
+                <Btn variant="secondary" onClick={() => setQueueIndex(i => (i ?? 0) + 1)} className="flex-1">
+                  Omitir
+                </Btn>
+                <Btn variant="secondary" onClick={() => setQueueIndex(null)}>Cerrar</Btn>
+              </div>
+              <p className="text-[11px] font-medium text-slate-400 leading-relaxed">
+                Enviar abre WhatsApp o el correo con el mensaje listo y marca el recordatorio como enviado.
+              </p>
+            </div>
+          )}
+        </Modal>
       )}
 
       <div className="flex flex-wrap items-center gap-2">

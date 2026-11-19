@@ -7,7 +7,7 @@
 import { createFreebuffAuth, isSameOriginRequest, type FreebuffAuth } from '@freebuff/auth';
 import {
   HttpError, errorMessage, listBackups, listServerErrors, recordError, restoreBackup, runOperation,
-  toAuthUser, toClient, withState,
+  stateHealth, toAuthUser, toClient, withState,
 } from './core';
 import type { Env } from './core';
 
@@ -81,6 +81,14 @@ async function handle(request: Request, env: Env, auth: FreebuffAuth): Promise<R
       });
       return json({ error: errorMessage(e) }, 400);
     }
+  }
+
+  if (url.pathname === '/api/health') {
+    const user = await auth.getUser(request);
+    if (!user) return json({ error: 'Inicia sesión para continuar' }, 401);
+    const { profile } = await withState(env, user, () => null);
+    if (profile.role !== 'admin') return json({ error: 'Solo un administrador puede ver el estado del servidor' }, 403);
+    return json({ health: await stateHealth(env) });
   }
 
   if (url.pathname === '/api/errors') {

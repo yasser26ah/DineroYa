@@ -14,7 +14,7 @@ import { PaymentModal, ActivityModal, WhatsAppDraftModal } from '../components/m
 import { bucketLabel, buildPromiseAgenda, lastActivityFor } from '../lib/engine';
 import { fmtDate, fmtMoney, fmtDateTime } from '../lib/format';
 import { ACTIVITY_RESULT_LABELS, Client, Installment, Loan } from '../types';
-import { generateOverdueMessage, generateReminderMessage } from '../services/gemini';
+
 
 type ModalState =
   | { kind: 'activity'; loan: Loan; client: Client; defaultType?: 'call' | 'whatsapp' | 'visit' | 'note' }
@@ -64,6 +64,7 @@ export const CollectionsPage: React.FC<{
     setBusyLoan(loan.id);
     try {
       const li = installments.filter(i => i.loanId === loan.id);
+      const { generateOverdueMessage, generateReminderMessage } = await import('../services/gemini');
       const msg = loan.status === 'overdue'
         ? await generateOverdueMessage(client, loan, li)
         : await generateReminderMessage(client, loan, li);

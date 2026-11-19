@@ -11,7 +11,7 @@ import { DEFAULT_SETTINGS } from '../lib/format';
 import { clientMoraAmount } from '../lib/engine';
 import {
   ActivityInput, AuthUser, BackupInfo, CreateLoanInput, DataAdapter, NewClientInput, NewCreditApplicationInput,
-  ServerError,
+  ServerError, StateHealth,
   NewNotificationInput, PaymentChannelInput, PayInput, SignUpOptions,
 } from './inputs';
 
@@ -200,6 +200,11 @@ export class ApiDataAdapter implements DataAdapter {
   async listServerErrors(): Promise<ServerError[]> {
     const body = await this.request('/api/errors');
     return (body?.errors ?? []) as ServerError[];
+  }
+
+  async getHealth(): Promise<StateHealth | null> {
+    const body = await this.request('/api/health');
+    return (body?.health ?? null) as StateHealth | null;
   }
 
   async restoreBackup(id: number): Promise<void> {

@@ -14,7 +14,7 @@ import { paymentMethodSlug, todayISO } from '../lib/format';
 import { EMPTY_SETTINGS } from '../lib/engine';
 import {
   ActivityInput, AuthUser, CreateLoanInput, DataAdapter, NewClientInput, NewCreditApplicationInput,
-  NewNotificationInput, PaymentChannelInput, PayInput, SignUpOptions, BackupInfo, ServerError,
+  NewNotificationInput, PaymentChannelInput, PayInput, SignUpOptions, BackupInfo, ServerError, StateHealth,
 } from './inputs';
 import { ApiDataAdapter } from './apiAdapter';
 import { LocalDataAdapter } from './localAdapter';
@@ -581,6 +581,10 @@ export class SupabaseAdapter implements DataAdapter {
 
   async listServerErrors(): Promise<ServerError[]> {
     return [];
+  }
+
+  async getHealth(): Promise<StateHealth | null> {
+    return null;
   }
 
   async restoreBackup(): Promise<void> {

@@ -16,7 +16,7 @@ import { useReveal } from '../lib/motion';
 import { SettingsSection } from '../lib/nav';
 import { PaymentMethodOption } from '../types';
 import { fmtDateTime } from '../lib/format';
-import type { BackupInfo } from '../services/inputs';
+import type { BackupInfo, StateHealth } from '../services/inputs';
 
 const BACKUP_KIND_LABEL: Record<string, string> = {
   auto: 'Automático',
@@ -86,7 +86,7 @@ export const SettingsPage: React.FC<{
 }> = ({ section, onSectionChange }) => {
   const {
     settings, updateSettings, clients, loans, installments, payments, activities,
-    paymentMethods, savePaymentMethod, importBackup, listBackups, restoreBackup,
+    paymentMethods, savePaymentMethod, importBackup, listBackups, restoreBackup, getHealth,
   } = useData();
   const { isSupabase, mode, signOut } = useAuth();
   const [saved, setSaved] = useState(false);
@@ -95,6 +95,7 @@ export const SettingsPage: React.FC<{
   const [methodError, setMethodError] = useState<string | null>(null);
   const [methodBusy, setMethodBusy] = useState(false);
   const [backups, setBackups] = useState<BackupInfo[]>([]);
+  const [health, setHealth] = useState<StateHealth | null>(null);
   const [backupsBusy, setBackupsBusy] = useState(false);
   const [backupsError, setBackupsError] = useState<string | null>(null);
   const [restoringId, setRestoringId] = useState<number | null>(null);
@@ -105,12 +106,13 @@ export const SettingsPage: React.FC<{
     if (section !== 'data' || mode !== 'api') return;
     let active = true;
     setBackupsBusy(true);
+    getHealth().then(h => { if (active) setHealth(h); }).catch(() => { if (active) setHealth(null); });
     listBackups()
       .then(list => { if (active) { setBackups(list); setBackupsError(null); } })
       .catch((err: any) => { if (active) setBackupsError(err?.message ?? 'No se pudieron cargar los respaldos'); })
       .finally(() => { if (active) setBackupsBusy(false); });
     return () => { active = false; };
-  }, [section, mode, listBackups, restoringId]);
+  }, [section, mode, listBackups, getHealth, restoringId]);
 
   const restore = useCallback(async (id: number) => {
     if (!window.confirm('Se reemplazarán todos los datos actuales por esta copia. ¿Continuar?')) return;
@@ -263,13 +265,20 @@ export const SettingsPage: React.FC<{
             </form>
           </Card>
 
+        </>
+      )}
+
+      {section === 'channels' && (
+        <>
+          <ChannelsPage embedded />
+
           <Card className="p-8" data-reveal>
             <div className="flex items-center gap-4 mb-6">
               <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl"><CreditCard className="w-6 h-6" /></div>
               <div>
                 <h3 className="text-lg font-black text-slate-900">Métodos de pago</h3>
                 <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">
-                  Cambia el nombre o agrega los que uses (Nequi, Daviplata, banco...)
+                  Con qué paga el cliente al registrar un recaudo (Nequi, Daviplata, banco...)
                 </p>
               </div>
             </div>
@@ -295,8 +304,6 @@ export const SettingsPage: React.FC<{
           </Card>
         </>
       )}
-
-      {section === 'channels' && <ChannelsPage embedded />}
 
       {section === 'log' && <LogPage embedded />}
 
@@ -351,6 +358,22 @@ export const SettingsPage: React.FC<{
                 6 horas de actividad y siempre antes de importar o restaurar un respaldo. Restaurar reemplaza los
                 datos actuales, pero antes guarda una copia de lo que había, así que también puedes deshacerlo.
               </p>
+
+              {health && (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+                  {[
+                    { label: 'Estado guardado', value: `${Math.max(1, Math.round(health.bytes / 1024))} KB` },
+                    { label: 'Revisión', value: String(health.rev) },
+                    { label: 'Respaldos', value: String(health.backups) },
+                    { label: 'Errores guardados', value: String(health.errors) },
+                  ].map(item => (
+                    <div key={item.label} className="bg-slate-50 border border-slate-100 rounded-2xl px-3 py-2">
+                      <p className="text-sm font-black text-slate-800">{item.value}</p>
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{item.label}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {backupsBusy && backups.length === 0 && (
                 <p className="text-sm font-bold text-slate-400">Cargando respaldos...</p>

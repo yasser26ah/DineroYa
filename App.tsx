@@ -159,6 +159,18 @@ const Shell: React.FC = () => {
 const AppBody: React.FC<{ target: NavTarget; onNavigate: (target: NavTarget) => void }> = ({ target, onNavigate }) => {
   const { error, refresh, loading, clients, profiles } = useData();
   const { user } = useAuth();
+  const [offline, setOffline] = useState(typeof navigator !== 'undefined' ? !navigator.onLine : false);
+
+  useEffect(() => {
+    const goOffline = () => setOffline(true);
+    const goOnline = () => setOffline(false);
+    window.addEventListener('offline', goOffline);
+    window.addEventListener('online', goOnline);
+    return () => {
+      window.removeEventListener('offline', goOffline);
+      window.removeEventListener('online', goOnline);
+    };
+  }, []);
   const firstLoad = loading && clients.length === 0;
 
   const myProfile = profiles.find(p => p.id === user?.id);
@@ -245,6 +257,11 @@ const AppBody: React.FC<{ target: NavTarget; onNavigate: (target: NavTarget) => 
   return (
     <Layout active={effectiveTab} activeTarget={{ ...target, tab: effectiveTab }} onNavigate={onNavigate}>
       <div className="pt-4 lg:pt-6">
+        {offline && (
+          <div className="mb-6 bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-2xl text-sm font-bold">
+            Sin conexión: puedes consultar lo último cargado, pero los cambios no se guardarán hasta que vuelvas a tener señal.
+          </div>
+        )}
         {error && <ErrorBanner message={error} onRetry={refresh} />}
         {firstLoad ? (
           <div className="py-24 text-center text-slate-400 font-black uppercase tracking-widest text-sm animate-pulse">Cargando datos...</div>

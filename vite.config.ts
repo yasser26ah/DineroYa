@@ -26,6 +26,19 @@ export default defineConfig(({ mode }) => {
         alias: {
           '@': path.resolve(__dirname, '.'),
         }
+      },
+      build: {
+        rollupOptions: {
+          output: {
+            // El bundle inicial no debe cargar gráficas ni el cliente de IA:
+            // son pesados y solo se usan en pantallas concretas.
+            manualChunks: (id) => {
+              if (id.includes('node_modules/recharts') || id.includes('node_modules/d3-')) return 'charts';
+              if (id.includes('@google/genai')) return 'gemini';
+              return undefined;
+            },
+          },
+        },
       }
     };
 });

@@ -147,6 +147,35 @@ export async function snapshotState(env: Env, data: string, rev: number, kind: s
   }
 }
 
+/** Medidas del estado guardado: sirven para decidir cuándo dejar el blob. */
+export interface StateHealth {
+  rev: number;
+  bytes: number;
+  updatedAt: string | null;
+  backups: number;
+  errors: number;
+}
+
+export async function stateHealth(env: Env): Promise<StateHealth> {
+  await ensureSchema(env);
+  const main = await env.DB.prepare(
+    'SELECT rev, length(data) AS bytes, updated_at FROM app_state WHERE id = ?',
+  ).bind('main').first<{ rev: number; bytes: number; updated_at: string }>();
+  const backups = await env.DB.prepare(
+    'SELECT COUNT(*) AS n FROM app_state_backups',
+  ).first<{ n: number }>();
+  const errors = await env.DB.prepare(
+    'SELECT COUNT(*) AS n FROM app_errors',
+  ).first<{ n: number }>();
+  return {
+    rev: main?.rev ?? 0,
+    bytes: main?.bytes ?? 0,
+    updatedAt: main?.updated_at ?? null,
+    backups: backups?.n ?? 0,
+    errors: errors?.n ?? 0,
+  };
+}
+
 export async function listBackups(env: Env): Promise<BackupInfo[]> {
   await ensureSchema(env);
   const res = await env.DB.prepare(

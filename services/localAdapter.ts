@@ -13,7 +13,7 @@ import {
 } from '../lib/engine';
 import {
   ActivityInput, AuthUser, BackupInfo, CreateLoanInput, DataAdapter, NewClientInput, NewCreditApplicationInput,
-  NewNotificationInput, PaymentChannelInput, PayInput, ServerError, SignUpOptions,
+  NewNotificationInput, PaymentChannelInput, PayInput, ServerError, SignUpOptions, StateHealth,
 } from './inputs';
 
 export interface LocalAdapterOptions {
@@ -771,6 +771,10 @@ export class LocalDataAdapter implements DataAdapter {
 
   async listServerErrors(): Promise<ServerError[]> {
     return [];
+  }
+
+  async getHealth(): Promise<StateHealth | null> {
+    return null;
   }
 
   async restoreBackup(): Promise<void> {

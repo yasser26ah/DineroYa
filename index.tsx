@@ -15,3 +15,13 @@ root.render(
     <App />
   </React.StrictMode>
 );
+
+// PWA: la app se puede instalar y abrir sin señal (solo el shell; los datos
+// y las operaciones siempre van a la red).
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {
+      // Sin service worker la app sigue funcionando normalmente.
+    });
+  });
+}

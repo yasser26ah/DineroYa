@@ -11,7 +11,7 @@ import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import { fmtDate, fmtMoney, todayISO, waLink } from '../lib/format';
 import { generateSchedule, restructureSchedule, riskSuggestedRate, splitInstallmentsForRestructure, ScheduleRow } from '../lib/engine';
-import { generatePaymentMessage } from '../services/gemini';
+
 import { Btn, Field, inputCls, Modal, MoneyInput } from './ui';
 
 // ---------------------------------------------------------------------------
@@ -389,6 +389,7 @@ export const PaymentModal: React.FC<{
             else if (i.amountPaid > 0) i.status = 'partial';
             remaining -= apply;
           });
+        const { generatePaymentMessage } = await import('../services/gemini');
         const msg = await generatePaymentMessage(client, { amount: amt, paymentDate: date }, loan, updatedInstallments);
         setDraft(msg);
       }

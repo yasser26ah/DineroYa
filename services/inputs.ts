@@ -163,6 +163,8 @@ export interface DataAdapter {
 
   /** Errores del servidor registrados para diagnóstico (solo admin). */
   listServerErrors(): Promise<ServerError[]>;
+  /** Tamaño y revisión del estado guardado (solo admin, solo nube). */
+  getHealth(): Promise<StateHealth | null>;
 
   /** Copias automáticas guardadas en el servidor (solo admin y solo en la nube). */
   listBackups(): Promise<BackupInfo[]>;
@@ -176,6 +178,14 @@ export interface BackupInfo {
   size: number;
   kind: string;
   createdAt: string;
+}
+
+export interface StateHealth {
+  rev: number;
+  bytes: number;
+  updatedAt: string | null;
+  backups: number;
+  errors: number;
 }
 
 export interface ServerError {

@@ -375,7 +375,7 @@ UPDATE roles
   SET screens = array_append(screens, 'payments')
   WHERE id IN ('admin', 'gerente', 'cobrador') AND NOT ('payments' = ANY(screens));
 
--- Módulos operativos: notificaciones, caja, canales de pago y reportes
+-- Módulos operativos: notificaciones, canales de pago y reportes
 
 -- ----------------------------------------------------------------------------
 -- 1. Centro de notificaciones y automatización
