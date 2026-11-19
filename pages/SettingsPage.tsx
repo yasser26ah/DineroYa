@@ -4,8 +4,8 @@
 // Canales de pago y Log dejaron de ser secciones del menú principal: viven
 // aquí, con todas sus funciones originales intactas.
 // ============================================================================
-import React, { useState } from 'react';
-import { Settings as SettingsIcon, Download, Database, Upload, Cloud, CheckCircle2, CreditCard, LogOut } from 'lucide-react';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Settings as SettingsIcon, Download, Database, Upload, Cloud, CheckCircle2, CreditCard, LogOut, History, RotateCcw } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import { Card, PageHeader, Btn, Field, inputCls } from '../components/ui';
@@ -15,6 +15,14 @@ import { LogPage } from './LogPage';
 import { useReveal } from '../lib/motion';
 import { SettingsSection } from '../lib/nav';
 import { PaymentMethodOption } from '../types';
+import { fmtDateTime } from '../lib/format';
+import type { BackupInfo } from '../services/inputs';
+
+const BACKUP_KIND_LABEL: Record<string, string> = {
+  auto: 'Automático',
+  'before-import': 'Antes de importar',
+  'pre-restore': 'Antes de restaurar',
+};
 
 const OLD_KEYS = ['db_clients', 'db_loans', 'db_payments'];
 
@@ -76,14 +84,48 @@ export const SettingsPage: React.FC<{
   section: SettingsSection;
   onSectionChange: (section: SettingsSection) => void;
 }> = ({ section, onSectionChange }) => {
-  const { settings, updateSettings, clients, loans, installments, payments, activities, paymentMethods, savePaymentMethod, importBackup } = useData();
+  const {
+    settings, updateSettings, clients, loans, installments, payments, activities,
+    paymentMethods, savePaymentMethod, importBackup, listBackups, restoreBackup,
+  } = useData();
   const { isSupabase, mode, signOut } = useAuth();
   const [saved, setSaved] = useState(false);
   const [importMsg, setImportMsg] = useState<string | null>(null);
   const [newMethod, setNewMethod] = useState('');
   const [methodError, setMethodError] = useState<string | null>(null);
   const [methodBusy, setMethodBusy] = useState(false);
+  const [backups, setBackups] = useState<BackupInfo[]>([]);
+  const [backupsBusy, setBackupsBusy] = useState(false);
+  const [backupsError, setBackupsError] = useState<string | null>(null);
+  const [restoringId, setRestoringId] = useState<number | null>(null);
   const revealRef = useReveal([section]);
+
+  // Los respaldos viven en el servidor: solo se consultan al abrir la sección.
+  useEffect(() => {
+    if (section !== 'data' || mode !== 'api') return;
+    let active = true;
+    setBackupsBusy(true);
+    listBackups()
+      .then(list => { if (active) { setBackups(list); setBackupsError(null); } })
+      .catch((err: any) => { if (active) setBackupsError(err?.message ?? 'No se pudieron cargar los respaldos'); })
+      .finally(() => { if (active) setBackupsBusy(false); });
+    return () => { active = false; };
+  }, [section, mode, listBackups, restoringId]);
+
+  const restore = useCallback(async (id: number) => {
+    if (!window.confirm('Se reemplazarán todos los datos actuales por esta copia. ¿Continuar?')) return;
+    setRestoringId(id);
+    setBackupsError(null);
+    setImportMsg(null);
+    try {
+      await restoreBackup(id);
+      setImportMsg('Respaldo restaurado. Los datos volvieron al estado de la copia elegida.');
+    } catch (err: any) {
+      setBackupsError(err?.message ?? 'No se pudo restaurar el respaldo');
+    } finally {
+      setRestoringId(null);
+    }
+  }, [restoreBackup]);
 
   const addMethod = async () => {
     setMethodBusy(true);
@@ -291,6 +333,63 @@ export const SettingsPage: React.FC<{
               <div className="mt-5 bg-sky-50 text-sky-700 text-sm font-medium p-4 rounded-2xl">{importMsg}</div>
             )}
           </Card>
+
+          {mode === 'api' && (
+            <Card className="p-8" data-reveal>
+              <div className="flex items-center gap-4 mb-6">
+                <div className="p-3 bg-sky-50 text-sky-600 rounded-2xl"><History className="w-6 h-6" /></div>
+                <div>
+                  <h3 className="text-lg font-black text-slate-900">Respaldos automáticos</h3>
+                  <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">
+                    Copias del servidor · se conservan las últimas 40
+                  </p>
+                </div>
+              </div>
+
+              <p className="text-sm text-slate-500 font-medium leading-relaxed mb-5">
+                Se guarda una copia del estado <span className="font-bold">anterior</span> a los cambios: una cada
+                6 horas de actividad y siempre antes de importar o restaurar un respaldo. Restaurar reemplaza los
+                datos actuales, pero antes guarda una copia de lo que había, así que también puedes deshacerlo.
+              </p>
+
+              {backupsBusy && backups.length === 0 && (
+                <p className="text-sm font-bold text-slate-400">Cargando respaldos...</p>
+              )}
+
+              {!backupsBusy && backups.length === 0 && !backupsError && (
+                <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 text-sm font-medium text-slate-600">
+                  Aún no hay copias. La primera se crea en cuanto se guarde un cambio.
+                </div>
+              )}
+
+              <div className="flex flex-col gap-2">
+                {backups.map(b => (
+                  <div
+                    key={b.id}
+                    className="flex flex-col sm:flex-row sm:items-center gap-3 bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-black text-slate-800">{fmtDateTime(b.createdAt)}</p>
+                      <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+                        {BACKUP_KIND_LABEL[b.kind] ?? b.kind} · rev {b.rev} · {Math.max(1, Math.round(b.size / 1024))} KB
+                      </p>
+                    </div>
+                    <Btn
+                      variant="secondary"
+                      onClick={() => restore(b.id)}
+                      disabled={restoringId !== null}
+                      className="shrink-0 flex items-center justify-center gap-2"
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                      {restoringId === b.id ? 'Restaurando...' : 'Restaurar'}
+                    </Btn>
+                  </div>
+                ))}
+              </div>
+
+              {backupsError && <p className="text-rose-600 text-sm font-bold mt-4">{backupsError}</p>}
+            </Card>
+          )}
 
           <Card className="p-6" data-reveal>
             <div className="flex flex-col sm:flex-row sm:items-center gap-4">

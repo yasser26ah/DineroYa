@@ -5,7 +5,9 @@
 //  · La lógica de negocio corre en el servidor (worker/core.ts)
 // ============================================================================
 import { createFreebuffAuth, isSameOriginRequest, type FreebuffAuth } from '@freebuff/auth';
-import { HttpError, errorMessage, runOperation, toAuthUser, toClient, withState } from './core';
+import {
+  HttpError, errorMessage, listBackups, restoreBackup, runOperation, toAuthUser, toClient, withState,
+} from './core';
 import type { Env } from './core';
 
 const JSON_HEADERS = { 'content-type': 'application/json; charset=utf-8', 'Cache-Control': 'private, no-store' };
@@ -31,6 +33,27 @@ async function handle(request: Request, env: Env, auth: FreebuffAuth): Promise<R
       return null;
     });
     return json({ user: toAuthUser(profile), data: toClient(keys) });
+  }
+
+  if (url.pathname === '/api/backups') {
+    const user = await auth.getUser(request);
+    if (!user) return json({ error: 'Inicia sesión para continuar' }, 401);
+    const { profile } = await withState(env, user, () => null);
+    if (profile.role !== 'admin') return json({ error: 'Solo un administrador puede gestionar los respaldos' }, 403);
+
+    if (request.method === 'GET') return json({ backups: await listBackups(env) });
+    if (request.method !== 'POST') return json({ error: 'Método no permitido' }, 405);
+    if (!isSameOriginRequest(request, env.APP_ORIGIN)) return json({ error: 'Origen no permitido' }, 403);
+
+    let body: { id?: number } | null = null;
+    try { body = await request.json() as { id?: number }; } catch { body = null; }
+    try {
+      const data = await restoreBackup(env, Number(body?.id));
+      return json({ data: toClient(data) });
+    } catch (e) {
+      if (e instanceof HttpError) return json({ error: e.message }, e.status);
+      return json({ error: errorMessage(e) }, 400);
+    }
   }
 
   if (url.pathname === '/api/op') {

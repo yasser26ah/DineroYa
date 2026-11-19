@@ -14,7 +14,7 @@ import { paymentMethodSlug, todayISO } from '../lib/format';
 import { EMPTY_SETTINGS } from '../lib/engine';
 import {
   ActivityInput, AuthUser, CreateLoanInput, DataAdapter, NewClientInput, NewCreditApplicationInput,
-  NewNotificationInput, PaymentChannelInput, PayInput, SignUpOptions,
+  NewNotificationInput, PaymentChannelInput, PayInput, SignUpOptions, BackupInfo,
 } from './inputs';
 import { ApiDataAdapter } from './apiAdapter';
 import { LocalDataAdapter } from './localAdapter';
@@ -569,6 +569,14 @@ export class SupabaseAdapter implements DataAdapter {
 
   async importBackup(): Promise<void> {
     throw new Error('La importación de respaldos está disponible en la versión en la nube (Sites), no en el modo Supabase.');
+  }
+
+  async listBackups(): Promise<BackupInfo[]> {
+    return [];
+  }
+
+  async restoreBackup(): Promise<void> {
+    throw new Error('Los respaldos del servidor están disponibles solo en la versión en la nube (Sites).');
   }
 }
 

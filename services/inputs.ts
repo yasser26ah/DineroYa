@@ -156,4 +156,17 @@ export interface DataAdapter {
 
   /** Restaura un respaldo JSON (solo con la base vacía). */
   importBackup(data: Record<string, unknown>): Promise<void>;
+
+  /** Copias automáticas guardadas en el servidor (solo admin y solo en la nube). */
+  listBackups(): Promise<BackupInfo[]>;
+  /** Vuelve el estado a una copia concreta. */
+  restoreBackup(id: number): Promise<void>;
+}
+
+export interface BackupInfo {
+  id: number;
+  rev: number;
+  size: number;
+  kind: string;
+  createdAt: string;
 }

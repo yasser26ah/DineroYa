@@ -10,7 +10,7 @@ import {
 
 import {
   DataAdapter, getAdapter, CreateLoanInput, PayInput, ActivityInput, NewClientInput, NewCreditApplicationInput,
-  NewNotificationInput, PaymentChannelInput,
+  NewNotificationInput, PaymentChannelInput, BackupInfo,
 } from '../services/dataAdapter';
 import { buildDashboardStats, DashboardStatsLike } from '../lib/engine';
 
@@ -61,6 +61,8 @@ interface DataState {
   ) => Promise<void>;
   linkClientToProfile: (userId: string, clientId: string | null) => Promise<void>;
   importBackup: (data: Record<string, unknown>) => Promise<void>;
+  listBackups: () => Promise<BackupInfo[]>;
+  restoreBackup: (id: number) => Promise<void>;
   refresh: () => Promise<void>;
 }
 
@@ -206,6 +208,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const importBackup = useCallback((data: Record<string, unknown>) =>
     wrap(() => adapter.importBackup(data)), [adapter, wrap]);
 
+  const listBackups = useCallback(() => adapter.listBackups(), [adapter]);
+  const restoreBackup = useCallback(async (id: number) => {
+    await wrap(() => adapter.restoreBackup(id));
+    await load();
+  }, [adapter, wrap, load]);
+
   // --- Estadísticas derivadas ---------------------------------------------------
 
   const stats = useMemo(
@@ -223,7 +231,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       updateProfileRole, toggleProfileActive, createApplication, updateApplicationStatus,
       savePaymentMethod, saveNotificationTemplate, createNotification, setNotificationStatus,
       savePaymentChannel,
-      linkClientToProfile, importBackup, saveRole, deleteRole, refresh: load,
+      linkClientToProfile, importBackup, listBackups, restoreBackup, saveRole, deleteRole, refresh: load,
     }}>
       {children}
     </DataContext.Provider>

@@ -10,7 +10,7 @@ import {
 import { DEFAULT_SETTINGS } from '../lib/format';
 import { clientMoraAmount } from '../lib/engine';
 import {
-  ActivityInput, AuthUser, CreateLoanInput, DataAdapter, NewClientInput, NewCreditApplicationInput,
+  ActivityInput, AuthUser, BackupInfo, CreateLoanInput, DataAdapter, NewClientInput, NewCreditApplicationInput,
   NewNotificationInput, PaymentChannelInput, PayInput, SignUpOptions,
 } from './inputs';
 
@@ -186,6 +186,19 @@ export class ApiDataAdapter implements DataAdapter {
 
   importBackup(data: Record<string, unknown>): Promise<void> {
     return this.op('importBackup', data);
+  }
+
+  async listBackups(): Promise<BackupInfo[]> {
+    const body = await this.request('/api/backups');
+    return (body?.backups ?? []) as BackupInfo[];
+  }
+
+  async restoreBackup(id: number): Promise<void> {
+    const body = await this.request('/api/backups', {
+      method: 'POST',
+      body: JSON.stringify({ id }),
+    });
+    this.apply(body);
   }
 }
 

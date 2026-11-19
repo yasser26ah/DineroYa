@@ -12,7 +12,7 @@ import {
   restructureSchedule, splitInstallmentsForRestructure,
 } from '../lib/engine';
 import {
-  ActivityInput, AuthUser, CreateLoanInput, DataAdapter, NewClientInput, NewCreditApplicationInput,
+  ActivityInput, AuthUser, BackupInfo, CreateLoanInput, DataAdapter, NewClientInput, NewCreditApplicationInput,
   NewNotificationInput, PaymentChannelInput, PayInput, SignUpOptions,
 } from './inputs';
 
@@ -727,6 +727,15 @@ export class LocalDataAdapter implements DataAdapter {
     });
     write(LS.settings, this.settings);
     this.persistAll();
+  }
+
+  /** En el navegador y en Supabase no hay copias del lado del servidor. */
+  async listBackups(): Promise<BackupInfo[]> {
+    return [];
+  }
+
+  async restoreBackup(): Promise<void> {
+    throw new Error('Los respaldos del servidor solo están disponibles en la versión en la nube (Sites).');
   }
 
   async cancelLoan(id: string, reason: string): Promise<void> {
