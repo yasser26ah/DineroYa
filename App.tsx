@@ -6,8 +6,8 @@
 // rutas heredadas. Notificaciones vive dentro de Cobranza; Canales de pago y
 // Log viven dentro de Configuración; Caja ya no forma parte del producto.
 // ============================================================================
-import React, { useCallback, useEffect, useState } from 'react';
-import { AlertTriangle, KeyRound } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { AlertTriangle, KeyRound, ShieldAlert } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { DataProvider, useData } from './context/DataContext';
 import { Layout } from './components/Layout';
@@ -23,6 +23,7 @@ import { ClientPortalPage } from './pages/ClientPortalPage';
 import { ApplicationsPage } from './pages/ApplicationsPage';
 import { PaymentsPage } from './pages/PaymentsPage';
 import { ReportsPage } from './pages/ReportsPage';
+import { CompleteProfilePage } from './pages/CompleteProfilePage';
 import { DEFAULT_TARGET, targetFromHash, targetToHash } from './lib/nav';
 import { resolveTab } from './lib/access';
 import type { NavTarget, TabId } from './lib/nav';
@@ -161,13 +162,58 @@ const AppBody: React.FC<{ target: NavTarget; onNavigate: (target: NavTarget) => 
   const firstLoad = loading && clients.length === 0;
 
   const myProfile = profiles.find(p => p.id === user?.id);
+  const isClient = user?.role === 'cliente';
 
-  // El gating vive en lib/access.ts y está cubierto por tests/access.test.mjs.
+  // Onboarding de cliente (pantalla dedicada). El gating de roles general sigue
+  // en lib/access.ts; este bloque solo decide si el cliente aún debe completar su
+  // ficha antes de poder usar el portal.
+  const clientForUser = useMemo(() => {
+    if (!isClient || !user) return undefined;
+    if (myProfile?.clientId) return clients.find(c => c!.id === myProfile.clientId);
+    return clients.find(c => c.email && c.email.toLowerCase() === (user.email ?? '').toLowerCase());
+  }, [isClient, user, myProfile, clients]);
+
+  const isClientOnboardingComplete = useMemo(() => {
+    const c = clientForUser;
+    if (!c) return false;
+    return Boolean(c.name && c.document && c.phone);
+  }, [clientForUser]);
+
   const effectiveTab: TabId = resolveTab(target.tab, user?.role, myProfile?.screens);
 
+  // Redirección silenciosa: si el usuario es cliente, su zona es el portal.
+  // Esto complementa a resolveTab/ canAccessScreen (que ya niegan equipo a clientes)
+  // y evita que quede en dashboard por defecto cuando el cliente intenta otra zona.
   useEffect(() => {
-    if (effectiveTab !== target.tab) onNavigate({ ...target, tab: effectiveTab });
-  }, [effectiveTab, target, onNavigate]);
+    if (!isClient) return;
+    if (isClientOnboardingComplete) {
+      if (effectiveTab !== 'portal' && target.tab !== 'portal') {
+        onNavigate({ tab: 'portal', settings: 'general', collections: 'today' });
+      }
+      return;
+    }
+    // Cliente sin completar: va a la pantalla de completado, sin importar el hash.
+    if (target.tab !== 'portal' || effectiveTab !== 'portal') {
+      onNavigate({ tab: 'portal', settings: 'general', collections: 'today' });
+    }
+  }, [isClient, isClientOnboardingComplete, effectiveTab, target.tab, onNavigate]);
+
+  if (isClient && !isClientOnboardingComplete) {
+    // Pantalla dedicada de completado: se renderiza en vez de la tab efectiva.
+    // Al guardar, CompleteProfilePage redirige a #/portal.
+    return (
+      <Layout active='portal' activeTarget={{ tab: 'portal', settings: 'general', collections: 'today' }} onNavigate={onNavigate}>
+        <div className="pt-4 lg:pt-6">
+          {error && <ErrorBanner message={error} onRetry={refresh} />}
+          {firstLoad ? (
+            <div className="py-24 text-center text-slate-400 font-black uppercase tracking-widest text-sm animate-pulse">Cargando datos...</div>
+          ) : (
+            <CompleteProfilePage />
+          )}
+        </div>
+      </Layout>
+    );
+  }
 
   const page = (() => {
     switch (effectiveTab) {
