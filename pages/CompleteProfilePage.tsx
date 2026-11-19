@@ -112,13 +112,10 @@ export const CompleteProfilePage: React.FC = () => {
           phone: rawPhone,
           email: rawEmail || undefined,
         });
-        await linkClientToProfile(user.id, created.id);
         clientId = created.id;
       }
 
-      // El Worker/localAdapter ya asigna el rol cliente al profile del usuario en el ingreso;
-      // aquí nos aseguramos de que, si por alguna razón el profile llegó sin rol cliente,
-      // se ponga explícitamente. Esto no hace doble trabajo en los caminos normales.
+      // Único vínculo usuario ↔ ficha, tanto si la ficha se actualizó como si se creó.
       await linkClientToProfile(user.id, clientId);
 
       // Volver a leer el cliente recién guardado para confirmación visual.
