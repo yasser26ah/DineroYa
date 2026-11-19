@@ -104,6 +104,8 @@ export interface Payment {
   balanceAfter: number;
   receivedBy?: string | null;
   createdAt: string;
+  /** Clave de idempotencia: evita duplicar el pago si se reintenta el envío. */
+  requestId?: string | null;
 }
 
 /** Slug del catálogo editable de métodos de pago (tabla payment_methods). */

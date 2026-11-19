@@ -11,6 +11,7 @@ import { DEFAULT_SETTINGS } from '../lib/format';
 import { clientMoraAmount } from '../lib/engine';
 import {
   ActivityInput, AuthUser, BackupInfo, CreateLoanInput, DataAdapter, NewClientInput, NewCreditApplicationInput,
+  ServerError,
   NewNotificationInput, PaymentChannelInput, PayInput, SignUpOptions,
 } from './inputs';
 
@@ -191,6 +192,11 @@ export class ApiDataAdapter implements DataAdapter {
   async listBackups(): Promise<BackupInfo[]> {
     const body = await this.request('/api/backups');
     return (body?.backups ?? []) as BackupInfo[];
+  }
+
+  async listServerErrors(): Promise<ServerError[]> {
+    const body = await this.request('/api/errors');
+    return (body?.errors ?? []) as ServerError[];
   }
 
   async restoreBackup(id: number): Promise<void> {

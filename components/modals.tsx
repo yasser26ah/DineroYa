@@ -352,6 +352,13 @@ export const PaymentModal: React.FC<{
   const [error, setError] = useState<string | null>(null);
   const [draft, setDraft] = useState<string | null>(null);
   const [donePayment, setDonePayment] = useState<Payment | null>(null);
+  // Una sola clave por intento de pago: si se reintenta el envío, el servidor
+  // devuelve el pago ya registrado en lugar de crearlo dos veces.
+  const [requestId] = useState(() =>
+    typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      ? crypto.randomUUID()
+      : `pay_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+  );
 
   const pending = installments
     .filter(i => i.status !== 'paid' && i.status !== 'waived')
@@ -367,7 +374,7 @@ export const PaymentModal: React.FC<{
     if (amt > outstanding + 0.001) { setError(`El pago excede el saldo pendiente (${fmtMoney(outstanding, settings.currency)})`); return; }
     setBusy(true);
     try {
-      const payment = await registerPayment({ loanId: loan.id, amount: amt, method, notes, date });
+      const payment = await registerPayment({ loanId: loan.id, amount: amt, method, notes, date, requestId });
       if (client) {
         const updatedInstallments = installments.map(i => ({ ...i }));
         let remaining = amt;

@@ -10,7 +10,7 @@ import {
 
 import {
   DataAdapter, getAdapter, CreateLoanInput, PayInput, ActivityInput, NewClientInput, NewCreditApplicationInput,
-  NewNotificationInput, PaymentChannelInput, BackupInfo,
+  NewNotificationInput, PaymentChannelInput, BackupInfo, ServerError,
 } from '../services/dataAdapter';
 import { buildDashboardStats, DashboardStatsLike } from '../lib/engine';
 
@@ -63,6 +63,7 @@ interface DataState {
   importBackup: (data: Record<string, unknown>) => Promise<void>;
   listBackups: () => Promise<BackupInfo[]>;
   restoreBackup: (id: number) => Promise<void>;
+  listServerErrors: () => Promise<ServerError[]>;
   refresh: () => Promise<void>;
 }
 
@@ -209,6 +210,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     wrap(() => adapter.importBackup(data)), [adapter, wrap]);
 
   const listBackups = useCallback(() => adapter.listBackups(), [adapter]);
+  const listServerErrors = useCallback(() => adapter.listServerErrors(), [adapter]);
   const restoreBackup = useCallback(async (id: number) => {
     await wrap(() => adapter.restoreBackup(id));
     await load();
@@ -231,7 +233,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       updateProfileRole, toggleProfileActive, createApplication, updateApplicationStatus,
       savePaymentMethod, saveNotificationTemplate, createNotification, setNotificationStatus,
       savePaymentChannel,
-      linkClientToProfile, importBackup, listBackups, restoreBackup, saveRole, deleteRole, refresh: load,
+      linkClientToProfile, importBackup, listBackups, restoreBackup, listServerErrors,
+      saveRole, deleteRole, refresh: load,
     }}>
       {children}
     </DataContext.Provider>

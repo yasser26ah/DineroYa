@@ -6,7 +6,8 @@
 // ============================================================================
 import { createFreebuffAuth, isSameOriginRequest, type FreebuffAuth } from '@freebuff/auth';
 import {
-  HttpError, errorMessage, listBackups, restoreBackup, runOperation, toAuthUser, toClient, withState,
+  HttpError, errorMessage, listBackups, listServerErrors, recordError, restoreBackup, runOperation,
+  toAuthUser, toClient, withState,
 } from './core';
 import type { Env } from './core';
 
@@ -71,8 +72,23 @@ async function handle(request: Request, env: Env, auth: FreebuffAuth): Promise<R
       return json({ user: toAuthUser(profile), data: toClient(keys), result: result ?? null });
     } catch (e) {
       if (e instanceof HttpError) return json({ error: e.message }, e.status);
+      await recordError(env, {
+        op: name || 'op',
+        message: errorMessage(e),
+        stack: e instanceof Error ? e.stack : '',
+        userId: user.sub,
+        path: url.pathname,
+      });
       return json({ error: errorMessage(e) }, 400);
     }
+  }
+
+  if (url.pathname === '/api/errors') {
+    const user = await auth.getUser(request);
+    if (!user) return json({ error: 'Inicia sesión para continuar' }, 401);
+    const { profile } = await withState(env, user, () => null);
+    if (profile.role !== 'admin') return json({ error: 'Solo un administrador puede ver los errores' }, 403);
+    return json({ errors: await listServerErrors(env) });
   }
 
   if (url.pathname.startsWith('/api/')) return json({ error: 'No encontrado' }, 404);
@@ -98,7 +114,18 @@ function setup(env: Env) {
 }
 
 export default {
-  fetch(request: Request, env: Env): Promise<Response> {
-    return setup(env)(request, env);
+  async fetch(request: Request, env: Env): Promise<Response> {
+    try {
+      return await setup(env)(request, env);
+    } catch (e) {
+      // Cualquier fallo no controlado queda registrado antes de responder.
+      await recordError(env, {
+        op: 'unhandled',
+        message: errorMessage(e),
+        stack: e instanceof Error ? e.stack : '',
+        path: new URL(request.url).pathname,
+      });
+      return json({ error: 'Error interno del servidor. Intenta de nuevo.' }, 500);
+    }
   },
 };

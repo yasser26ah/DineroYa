@@ -13,7 +13,7 @@ import {
 } from '../lib/engine';
 import {
   ActivityInput, AuthUser, BackupInfo, CreateLoanInput, DataAdapter, NewClientInput, NewCreditApplicationInput,
-  NewNotificationInput, PaymentChannelInput, PayInput, SignUpOptions,
+  NewNotificationInput, PaymentChannelInput, PayInput, ServerError, SignUpOptions,
 } from './inputs';
 
 export interface LocalAdapterOptions {
@@ -734,6 +734,10 @@ export class LocalDataAdapter implements DataAdapter {
     return [];
   }
 
+  async listServerErrors(): Promise<ServerError[]> {
+    return [];
+  }
+
   async restoreBackup(): Promise<void> {
     throw new Error('Los respaldos del servidor solo están disponibles en la versión en la nube (Sites).');
   }
@@ -756,6 +760,12 @@ export class LocalDataAdapter implements DataAdapter {
   }
 
   async registerPayment(input: PayInput): Promise<Payment> {
+    // Idempotencia: un reintento con la misma clave devuelve el pago original
+    // en vez de descontar dos veces el saldo del cliente.
+    if (input.requestId) {
+      const existing = this.payments.find(p => p.requestId === input.requestId);
+      if (existing) return existing;
+    }
     const loan = this.loans.find(l => l.id === input.loanId);
     if (!loan) throw new Error('Préstamo no encontrado');
     const li = this.installments
@@ -785,6 +795,7 @@ export class LocalDataAdapter implements DataAdapter {
       method: input.method, notes: input.notes, paymentDate: date,
       balanceAfter: loanOutstanding(loan.id, this.installments),
       receivedBy: this.actor.id, createdAt: new Date().toISOString(),
+      requestId: input.requestId ?? null,
     };
     this.payments.push(payment);
     this.auditEvent('payments', payment.id, 'INSERT', {

@@ -3,11 +3,12 @@
 // Antes "Auditoría de app": bitácora global de trazabilidad. Vive dentro de
 // Configuración y conserva visor, filtros, detalle y exportación.
 // ============================================================================
-import React, { useMemo, useState } from 'react';
-import { ScrollText, ChevronDown, ChevronUp, Download } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ScrollText, ChevronDown, ChevronUp, Download, AlertTriangle } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { Card, PageHeader, EmptyState, SearchBar, Btn } from '../components/ui';
 import { fmtDateTime } from '../lib/format';
+import type { ServerError } from '../services/inputs';
 
 const ENTITY_LABELS: Record<string, string> = {
   clients: 'Clientes',
@@ -33,11 +34,19 @@ const ACTION_STYLE: Record<string, string> = {
 const csvCell = (value: unknown) => `"${String(value ?? '').replace(/"/g, '""')}"`;
 
 export const LogPage: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => {
-  const { auditEvents } = useData();
+  const { auditEvents, listServerErrors } = useData();
+  const [serverErrors, setServerErrors] = useState<ServerError[]>([]);
+  const [showErrors, setShowErrors] = useState(false);
   const [search, setSearch] = useState('');
   const [entity, setEntity] = useState('all');
   const [actor, setActor] = useState('all');
   const [expanded, setExpanded] = useState<string | null>(null);
+
+  // Diagnóstico del Worker: solo los administradores reciben la lista; para el
+  // resto el servidor responde 403 y la sección simplemente no aparece.
+  useEffect(() => {
+    listServerErrors().then(setServerErrors).catch(() => setServerErrors([]));
+  }, [listServerErrors]);
 
   const entities = [...new Set(auditEvents.map(e => e.entity))];
   const actors = [...new Set(auditEvents.map(e => e.actorName ?? 'Sistema'))];
@@ -106,6 +115,37 @@ export const LogPage: React.FC<{ embedded?: boolean }> = ({ embedded = false }) 
             </Btn>
           }
         />
+      )}
+
+      {serverErrors.length > 0 && (
+        <div className="bg-rose-50 border border-rose-100 rounded-3xl p-5" data-reveal>
+          <button
+            onClick={() => setShowErrors(v => !v)}
+            className="w-full flex items-center justify-between gap-3 text-left"
+          >
+            <span className="flex items-center gap-2 text-sm font-black text-rose-700">
+              <AlertTriangle className="w-4 h-4" />
+              {serverErrors.length} error(es) recientes del servidor
+            </span>
+            {showErrors ? <ChevronUp className="w-4 h-4 text-rose-500" /> : <ChevronDown className="w-4 h-4 text-rose-500" />}
+          </button>
+          {showErrors && (
+            <div className="flex flex-col gap-2 mt-4">
+              {serverErrors.map(err => (
+                <div key={err.id} className="bg-white/70 border border-rose-100 rounded-2xl px-4 py-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-md bg-rose-100 text-rose-700">{err.op}</span>
+                    <span className="text-[11px] font-bold text-slate-400">{fmtDateTime(err.createdAt)}</span>
+                  </div>
+                  <p className="text-sm font-bold text-slate-700 mt-1 break-words">{err.message}</p>
+                  {err.stack && (
+                    <pre className="text-[10px] leading-relaxed text-slate-500 whitespace-pre-wrap break-all max-h-40 overflow-y-auto mt-2">{err.stack}</pre>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       )}
 
       <div data-reveal>

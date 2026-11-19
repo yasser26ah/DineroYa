@@ -33,6 +33,8 @@ export interface PayInput {
   method: Payment['method'];
   notes?: string;
   date?: string;
+  /** Misma clave en un reintento = se devuelve el pago ya registrado. */
+  requestId?: string;
 }
 
 export interface ActivityInput {
@@ -157,6 +159,9 @@ export interface DataAdapter {
   /** Restaura un respaldo JSON (solo con la base vacía). */
   importBackup(data: Record<string, unknown>): Promise<void>;
 
+  /** Errores del servidor registrados para diagnóstico (solo admin). */
+  listServerErrors(): Promise<ServerError[]>;
+
   /** Copias automáticas guardadas en el servidor (solo admin y solo en la nube). */
   listBackups(): Promise<BackupInfo[]>;
   /** Vuelve el estado a una copia concreta. */
@@ -168,5 +173,15 @@ export interface BackupInfo {
   rev: number;
   size: number;
   kind: string;
+  createdAt: string;
+}
+
+export interface ServerError {
+  id: number;
+  op: string;
+  message: string;
+  stack?: string | null;
+  userId?: string | null;
+  path?: string | null;
   createdAt: string;
 }

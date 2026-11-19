@@ -51,7 +51,63 @@ export async function ensureSchema(env: Env): Promise<void> {
   await env.DB.prepare(
     'CREATE INDEX IF NOT EXISTS idx_backups_created ON app_state_backups(created_at DESC)',
   ).run();
+  // Errores del Worker: sin esto, un fallo en producción no deja rastro.
+  await env.DB.prepare(
+    'CREATE TABLE IF NOT EXISTS app_errors (id INTEGER PRIMARY KEY AUTOINCREMENT, op TEXT NOT NULL, message TEXT NOT NULL, stack TEXT, user_id TEXT, path TEXT, created_at TEXT NOT NULL)',
+  ).run();
+  await env.DB.prepare(
+    'CREATE INDEX IF NOT EXISTS idx_errors_created ON app_errors(created_at DESC)',
+  ).run();
   schemaReady = true;
+}
+
+// --- Diagnóstico -------------------------------------------------------------
+export interface ServerErrorInfo {
+  id: number;
+  op: string;
+  message: string;
+  stack?: string | null;
+  userId?: string | null;
+  path?: string | null;
+  createdAt: string;
+}
+
+const MAX_ERRORS = 100;
+
+/** Registra un fallo del Worker. Best-effort: nunca rompe la respuesta. */
+export async function recordError(
+  env: Env,
+  info: { op: string; message: string; stack?: string; userId?: string | null; path?: string | null },
+): Promise<void> {
+  try {
+    await ensureSchema(env);
+    await env.DB.prepare(
+      'INSERT INTO app_errors (op, message, stack, user_id, path, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+    ).bind(
+      (info.op || 'desconocida').slice(0, 80),
+      info.message.slice(0, 500),
+      (info.stack ?? '').slice(0, 4000),
+      info.userId ?? null,
+      info.path ?? null,
+      new Date().toISOString(),
+    ).run();
+    await env.DB.prepare(
+      'DELETE FROM app_errors WHERE id NOT IN (SELECT id FROM app_errors ORDER BY id DESC LIMIT ?)',
+    ).bind(MAX_ERRORS).run();
+  } catch {
+    // Si el diagnóstico falla, el error original sigue su curso.
+  }
+}
+
+export async function listServerErrors(env: Env): Promise<ServerErrorInfo[]> {
+  await ensureSchema(env);
+  const res = await env.DB.prepare(
+    'SELECT id, op, message, stack, user_id, path, created_at FROM app_errors ORDER BY id DESC LIMIT 50',
+  ).all<{ id: number; op: string; message: string; stack: string | null; user_id: string | null; path: string | null; created_at: string }>();
+  return (res.results ?? []).map(r => ({
+    id: r.id, op: r.op, message: r.message, stack: r.stack,
+    userId: r.user_id, path: r.path, createdAt: r.created_at,
+  }));
 }
 
 // --- Respaldos automáticos ---------------------------------------------------
