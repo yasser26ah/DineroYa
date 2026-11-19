@@ -124,6 +124,8 @@ export interface DataAdapter {
   // Escritura
   createClient(input: NewClientInput): Promise<Client>;
   updateClient(id: string, patch: Partial<NewClientInput> & { active?: boolean }): Promise<void>;
+  /** Fusiona una ficha duplicada en otra (mueve préstamos, pagos y gestiones). */
+  mergeClients(keepId: string, mergeId: string): Promise<void>;
   createLoan(input: CreateLoanInput): Promise<Loan>;
   restructureLoan(input: RestructureLoanInput): Promise<Loan>;
   cancelLoan(id: string, reason: string): Promise<void>;

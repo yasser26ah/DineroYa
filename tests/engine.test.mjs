@@ -16,6 +16,9 @@ import {
   splitInstallmentsForRestructure,
   buildPromiseAgenda,
   scoreCreditApplication,
+  duplicateReason,
+  findClientDuplicatePairs,
+  findClientByDocument,
 } from '../.local/test-build/modules.mjs';
 
 const loan = (overrides = {}) => ({
@@ -127,6 +130,38 @@ test('la mora no se cobra sobre cuotas pagadas ni préstamos cancelados', () => 
 test('la mora no se mezcla entre clientes', () => {
   const installments = [installment({ dueDate: '2026-01-01' })];
   assert.equal(clientMoraAmount('c2', [loan()], installments, 5, '2026-01-31'), 0);
+});
+
+// --- Duplicados de clientes ------------------------------------------------
+
+test('el documento se compara sin puntos ni mayúsculas', () => {
+  const reason = duplicateReason({ document: '1.023.456.789' }, { document: '1023456789' });
+  assert.equal(reason, 'mismo documento');
+});
+
+test('el teléfono se compara por sus últimos 7 dígitos', () => {
+  assert.equal(duplicateReason({ phone: '+57 300 123 4567' }, { phone: '3001234567' }), 'mismo teléfono');
+  assert.equal(duplicateReason({ phone: '3001234567' }, { phone: '3109999999' }), null);
+});
+
+test('el email se compara sin distinguir mayúsculas', () => {
+  assert.equal(duplicateReason({ email: 'Ana@Correo.com' }, { email: 'ana@correo.com' }), 'mismo email');
+});
+
+test('las fichas inactivas no generan pares duplicados', () => {
+  const clients = [
+    { ...client, document: '123', active: true },
+    { ...client, id: 'c2', document: '123', active: true },
+    { ...client, id: 'c3', document: '123', active: false },
+  ];
+  assert.equal(findClientDuplicatePairs(clients).length, 1);
+});
+
+test('el alta bloquea un documento ya registrado, salvo la propia ficha', () => {
+  const clients = [{ ...client, document: '1023456789', active: true }];
+  assert.ok(findClientByDocument(clients, '1.023.456.789'));
+  assert.equal(findClientByDocument(clients, '1.023.456.789', 'c1'), undefined);
+  assert.equal(findClientByDocument(clients, ''), undefined);
 });
 
 // --- Evaluación de solicitudes ---------------------------------------------

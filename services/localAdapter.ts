@@ -8,7 +8,7 @@ import {
 } from '../types';
 import { DEFAULT_SETTINGS, paymentMethodSlug, todayISO } from '../lib/format';
 import {
-  EMPTY_SETTINGS, clientMoraAmount, computeRiskScore, generateSchedule, loanOutstanding,
+  EMPTY_SETTINGS, clientMoraAmount, computeRiskScore, findClientByDocument, generateSchedule, loanOutstanding,
   restructureSchedule, splitInstallmentsForRestructure,
 } from '../lib/engine';
 import {
@@ -526,6 +526,12 @@ export class LocalDataAdapter implements DataAdapter {
   // --- Escritura -----------------------------------------------------------------
 
   async createClient(input: NewClientInput): Promise<Client> {
+    // Un documento repetido casi siempre es un alta duplicada: se frena aquí
+    // para no partir el historial ni el estado de cuenta del cliente.
+    const sameDocument = findClientByDocument(this.clients, input.document);
+    if (sameDocument) {
+      throw new Error(`Ya existe un cliente con ese documento: ${sameDocument.name}. Edita su ficha en vez de crear otra.`);
+    }
     const client: Client = {
       id: uid(),
       name: input.name,
@@ -543,6 +549,35 @@ export class LocalDataAdapter implements DataAdapter {
     this.auditEvent('clients', client.id, 'INSERT', { name: client.name });
     this.persistAll();
     return client;
+  }
+
+  /**
+   * Fusiona dos fichas duplicadas: los préstamos, pagos, gestiones y
+   * solicitudes del duplicado pasan a la ficha que se conserva.
+   */
+  async mergeClients(keepId: string, mergeId: string): Promise<void> {
+    if (keepId === mergeId) throw new Error('Las fichas deben ser distintas');
+    const keep = this.clients.find(c => c.id === keepId);
+    const merged = this.clients.find(c => c.id === mergeId);
+    if (!keep || !merged) throw new Error('Cliente no encontrado');
+
+    this.loans.forEach(l => { if (l.clientId === mergeId) l.clientId = keepId; });
+    this.payments.forEach(p => { if (p.clientId === mergeId) p.clientId = keepId; });
+    this.activities.forEach(a => { if (a.clientId === mergeId) a.clientId = keepId; });
+    this.applications.forEach(a => { if (a.clientId === mergeId) a.clientId = keepId; });
+    this.profiles.forEach(p => { if (p.clientId === mergeId) p.clientId = keepId; });
+
+    // Se completa lo que falte en la ficha conservada antes de desactivar la otra.
+    keep.document = keep.document || merged.document;
+    keep.phone = keep.phone || merged.phone;
+    keep.email = keep.email || merged.email;
+    keep.address = keep.address || merged.address;
+
+    merged.active = false;
+    merged.notes = [merged.notes, `Fusionado en ${keep.name}`].filter(Boolean).join(' | ');
+
+    this.auditEvent('clients', keepId, 'MERGE', { mergedClientId: mergeId, mergedName: merged.name });
+    this.persistAll();
   }
 
   async updateClient(id: string, patch: Partial<NewClientInput> & { active?: boolean }): Promise<void> {

@@ -283,6 +283,7 @@ type Args = any;
 export const OPS: Record<string, (a: LocalDataAdapter, x: Args) => unknown> = {
   createClient: (a, x) => a.createClient(x),
   updateClient: (a, x) => a.updateClient(x.id, x.patch),
+  mergeClients: (a, x) => a.mergeClients(x.keepId, x.mergeId),
   createLoan: (a, x) => a.createLoan(x),
   restructureLoan: (a, x) => a.restructureLoan(x),
   cancelLoan: (a, x) => a.cancelLoan(x.id, x.reason),
@@ -306,7 +307,9 @@ export const OPS: Record<string, (a: LocalDataAdapter, x: Args) => unknown> = {
   importBackup: (a, x) => a.importBackup(x),
 };
 
-export const ADMIN_ONLY = new Set(['updateProfileRole', 'toggleProfileActive', 'saveRole', 'deleteRole', 'importBackup']);
+export const ADMIN_ONLY = new Set([
+  'updateProfileRole', 'toggleProfileActive', 'saveRole', 'deleteRole', 'importBackup', 'mergeClients',
+]);
 /** El rol cliente solo puede registrar sus propias solicitudes de crédito. */
 export const CLIENT_ONLY = new Set(['createApplication']);
 

@@ -3,7 +3,7 @@
 // ============================================================================
 import React, { useMemo, useState } from 'react';
 import {
-  Wallet, CalendarClock, CircleDollarSign, FileText, Plus, CheckCircle2, AlertTriangle, Clock,
+  Wallet, CalendarClock, CircleDollarSign, FileText, Plus, CheckCircle2, AlertTriangle, Clock, Receipt, Printer,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
@@ -13,9 +13,10 @@ import {
 } from '../components/ui';
 import { fmtDate, fmtMoney, todayISO } from '../lib/format';
 import { loanOutstanding } from '../lib/engine';
+import { DocumentHeader, PrintDocument } from '../components/PrintDocument';
 import {
   CREDIT_APPLICATION_STATUS_LABELS, FREQUENCY_LABELS, INSTALLMENT_STATUS_LABELS, LOAN_STATUS_LABELS,
-  PAYMENT_CHANNEL_KIND_LABELS,
+  PAYMENT_CHANNEL_KIND_LABELS, paymentMethodLabel, Payment,
 } from '../types';
 
 const appStatusStyle = (s: string) =>
@@ -26,7 +27,10 @@ const appStatusStyle = (s: string) =>
 
 export const ClientPortalPage: React.FC = () => {
   const { user } = useAuth();
-  const { clients, loans, installments, applications, settings, paymentChannels, createApplication } = useData();
+  const {
+    clients, loans, installments, payments, applications, settings, paymentChannels, createApplication,
+  } = useData();
+  const [printDoc, setPrintDoc] = useState<'statement' | { receipt: Payment } | null>(null);
   const [showRequest, setShowRequest] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,6 +68,13 @@ export const ClientPortalPage: React.FC = () => {
     [myApplications],
   );
   const limitReached = todayCount >= DAILY_LIMIT;
+
+  const myPayments = useMemo(
+    () => payments
+      .filter(p => myLoanIds.has(p.loanId) && !p.notes?.includes('ANULADO'))
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+    [payments, myLoanIds],
+  );
 
   const outstanding = myLoans
     .filter(l => l.status !== 'cancelled' && l.status !== 'paid')
@@ -169,7 +180,15 @@ export const ClientPortalPage: React.FC = () => {
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <Card className="p-6">
-          <h3 className="text-lg font-black text-slate-900 mb-4">Mis préstamos</h3>
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <h3 className="text-lg font-black text-slate-900">Mis préstamos</h3>
+            <button
+              onClick={() => setPrintDoc('statement')}
+              className="text-[10px] font-black text-indigo-600 uppercase tracking-widest flex items-center gap-1 hover:underline"
+            >
+              <Printer className="w-3.5 h-3.5" /> Estado de cuenta
+            </button>
+          </div>
           {myLoans.length === 0 ? (
             <EmptyState icon={Wallet} title="Aún no tienes préstamos" hint="Cuando se apruebe un crédito aparecerá aquí." />
           ) : (
@@ -275,6 +294,35 @@ export const ClientPortalPage: React.FC = () => {
       )}
 
       <Card className="p-6 mt-6">
+        <h3 className="text-lg font-black text-slate-900 mb-1">Mis pagos</h3>
+        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-4">
+          Descarga el comprobante de cualquier pago
+        </p>
+        {myPayments.length === 0 ? (
+          <p className="text-sm font-medium text-slate-400">Todavía no registramos pagos a tu nombre.</p>
+        ) : (
+          <div className="divide-y divide-slate-50">
+            {myPayments.slice(0, 24).map(p => (
+              <div key={p.id} className="flex items-center justify-between gap-3 py-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-black text-slate-800">{fmtMoney(p.amount, cur)}</p>
+                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+                    {fmtDate(p.paymentDate)} · {paymentMethodLabel(p.method)}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setPrintDoc({ receipt: p })}
+                  className="text-[10px] font-black text-indigo-600 uppercase tracking-widest flex items-center gap-1 hover:underline shrink-0"
+                >
+                  <Receipt className="w-3.5 h-3.5" /> Comprobante
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      <Card className="p-6 mt-6">
         <h3 className="text-lg font-black text-slate-900 mb-2">Mis datos</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
           <div><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nombre</p><p className="font-bold text-slate-700">{me?.name ?? user?.fullName}</p></div>
@@ -319,6 +367,98 @@ export const ClientPortalPage: React.FC = () => {
             </div>
           </form>
         </Modal>
+      )}
+
+      {printDoc === 'statement' && (
+        <PrintDocument title="Estado de cuenta" onClose={() => setPrintDoc(null)}>
+          <DocumentHeader
+            company={settings.companyName}
+            title="Estado de cuenta"
+            subtitle={fmtDate(todayISO())}
+          />
+          <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs mt-5">
+            <p><span className="font-black">Cliente:</span> {me?.name ?? user?.fullName}</p>
+            <p><span className="font-black">Documento:</span> {me?.document ?? '—'}</p>
+            <p><span className="font-black">Teléfono:</span> {me?.phone ?? '—'}</p>
+            <p><span className="font-black">Email:</span> {me?.email ?? user?.email}</p>
+          </div>
+
+          <table className="w-full text-xs mt-6 border-t border-slate-300">
+            <thead>
+              <tr className="text-left text-[10px] uppercase tracking-widest text-slate-500">
+                <th className="py-2">Préstamo</th>
+                <th className="py-2">Desembolso</th>
+                <th className="py-2">Total a pagar</th>
+                <th className="py-2">Saldo</th>
+                <th className="py-2">Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {myLoans.map(loan => (
+                <tr key={loan.id} className="border-t border-slate-100">
+                  <td className="py-2 font-bold">{loan.installmentsCount} cuotas {FREQUENCY_LABELS[loan.frequency].toLowerCase()}</td>
+                  <td className="py-2">{fmtMoney(loan.principal, cur)}</td>
+                  <td className="py-2">{fmtMoney(loan.totalDue, cur)}</td>
+                  <td className="py-2 font-black">{fmtMoney(loanOutstanding(loan.id, installments), cur)}</td>
+                  <td className="py-2">{LOAN_STATUS_LABELS[loan.status]}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <div className="mt-4 flex justify-end gap-8 text-sm border-t-2 border-slate-800 pt-3">
+            <p className="font-black">Saldo total: {fmtMoney(outstanding, cur)}</p>
+            {overdueAmount > 0 && <p className="font-black text-rose-700">En mora: {fmtMoney(overdueAmount, cur)}</p>}
+          </div>
+
+          <p className="mt-8 text-[10px] text-slate-500 leading-relaxed">
+            Documento informativo generado el {fmtDate(todayISO())} desde el portal de {settings.companyName}. No
+            sustituye el contrato ni el paz y salvo. Para corregir datos, comunícate con la oficina.
+          </p>
+        </PrintDocument>
+      )}
+
+      {printDoc && printDoc !== 'statement' && (
+        <PrintDocument title="Comprobante de pago" onClose={() => setPrintDoc(null)}>
+          <DocumentHeader
+            company={settings.companyName}
+            title="Comprobante de pago"
+            subtitle={`No. ${printDoc.receipt.id.slice(-8).toUpperCase()}`}
+          />
+          <div className="mt-6 space-y-2 text-sm">
+            <div className="flex justify-between border-b border-slate-100 pb-2">
+              <span className="font-bold text-slate-500">Cliente</span>
+              <span className="font-black">{me?.name ?? user?.fullName}</span>
+            </div>
+            <div className="flex justify-between border-b border-slate-100 pb-2">
+              <span className="font-bold text-slate-500">Documento</span>
+              <span className="font-black">{me?.document ?? '—'}</span>
+            </div>
+            <div className="flex justify-between border-b border-slate-100 pb-2">
+              <span className="font-bold text-slate-500">Fecha del pago</span>
+              <span className="font-black">{fmtDate(printDoc.receipt.paymentDate)}</span>
+            </div>
+            <div className="flex justify-between border-b border-slate-100 pb-2">
+              <span className="font-bold text-slate-500">Método</span>
+              <span className="font-black">{paymentMethodLabel(printDoc.receipt.method)}</span>
+            </div>
+            <div className="flex justify-between border-b border-slate-100 pb-2">
+              <span className="font-bold text-slate-500">Monto recibido</span>
+              <span className="font-black text-lg">{fmtMoney(printDoc.receipt.amount, cur)}</span>
+            </div>
+            <div className="flex justify-between border-b border-slate-100 pb-2">
+              <span className="font-bold text-slate-500">Saldo después del pago</span>
+              <span className="font-black">{fmtMoney(printDoc.receipt.balanceAfter, cur)}</span>
+            </div>
+          </div>
+          <p className="mt-8 text-[10px] text-slate-500 leading-relaxed">
+            {settings.companyName} confirma la recepción del pago indicado. Conserva este comprobante como soporte.
+          </p>
+          <div className="mt-12 flex justify-between text-[10px] text-slate-400">
+            <span>Firma del cliente: ______________________</span>
+            <span>Recibido por: ______________________</span>
+          </div>
+        </PrintDocument>
       )}
     </div>
   );

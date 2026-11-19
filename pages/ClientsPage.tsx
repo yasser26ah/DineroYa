@@ -2,18 +2,20 @@
 // DineroYa — Clientes: cartera con ficha 360
 // ============================================================================
 import React, { useMemo, useState } from 'react';
-import { UserPlus, Users, MessageSquare, Pencil, PlusCircle, Eye } from 'lucide-react';
+import { UserPlus, Users, MessageSquare, Pencil, PlusCircle, Eye, AlertTriangle, GitMerge } from 'lucide-react';
 import { useData } from '../context/DataContext';
+import { useAuth } from '../context/AuthContext';
 import {
   Card, PageHeader, EmptyState, Btn, RiskBadge, SearchBar, Modal, Field, inputCls, StatusBadge, loanStatusStyle,
 } from '../components/ui';
 import { ClientFormModal, CreateLoanModal } from '../components/modals';
-import { loanOutstanding, clientMoraAmount } from '../lib/engine';
+import { loanOutstanding, clientMoraAmount, findClientDuplicatePairs } from '../lib/engine';
 import { fmtDate, fmtMoney, waLink } from '../lib/format';
 import { Client, LOAN_STATUS_LABELS, paymentMethodLabel } from '../types';
 
 export const ClientsPage: React.FC = () => {
-  const { clients, loans, installments, payments, settings, paymentMethods } = useData();
+  const { clients, loans, installments, payments, settings, paymentMethods, mergeClients } = useData();
+  const { user } = useAuth();
   const moraOf = (clientId: string) => clientMoraAmount(clientId, loans, installments, settings.moraRate ?? 0);
   const cur = settings.currency;
   const [search, setSearch] = useState('');
@@ -30,6 +32,25 @@ export const ClientsPage: React.FC = () => {
       (c.document ?? '').toLowerCase().includes(q)
     );
   }, [clients, search]);
+
+  // Fichas que parecen la misma persona (documento, teléfono o email repetido).
+  const duplicates = useMemo(() => findClientDuplicatePairs(clients), [clients]);
+  const [showDuplicates, setShowDuplicates] = useState(true);
+  const [dupBusy, setDupBusy] = useState<string | null>(null);
+  const [dupError, setDupError] = useState<string | null>(null);
+
+  const merge = async (keepId: string, mergeId: string, keepName: string, mergeName: string) => {
+    if (!window.confirm(`Se moverán los préstamos, pagos y gestiones de “${mergeName}” a “${keepName}”. ¿Continuar?`)) return;
+    setDupBusy(mergeId);
+    setDupError(null);
+    try {
+      await mergeClients(keepId, mergeId);
+    } catch (err: any) {
+      setDupError(err?.message ?? 'No se pudieron fusionar las fichas');
+    } finally {
+      setDupBusy(null);
+    }
+  };
 
   const debtOf = (clientId: string) =>
     loans.filter(l => l.clientId === clientId && l.status !== 'cancelled' && l.status !== 'paid')
@@ -48,6 +69,65 @@ export const ClientsPage: React.FC = () => {
       />
 
       <SearchBar value={search} onChange={setSearch} placeholder="Nombre, teléfono o documento..." />
+
+      {user?.role === 'admin' && duplicates.length > 0 && showDuplicates && (
+        <Card className="p-5 border-amber-100 bg-amber-50/40">
+          <div className="flex items-start justify-between gap-4 mb-3">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-sm font-black text-slate-800">
+                  {duplicates.length} posible(s) ficha(s) duplicada(s)
+                </p>
+                <p className="text-[11px] font-bold text-slate-500">
+                  Mismo documento, teléfono o email. Fusiona para no partir el historial ni el saldo del cliente.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowDuplicates(false)}
+              className="text-[10px] font-black text-slate-500 uppercase tracking-widest hover:underline shrink-0"
+            >
+              Ocultar
+            </button>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            {duplicates.slice(0, 12).map(pair => (
+              <div
+                key={`${pair.a.id}-${pair.b.id}`}
+                className="flex flex-col sm:flex-row sm:items-center gap-2 bg-white border border-amber-100 rounded-2xl px-4 py-3"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-black text-slate-800 truncate">
+                    {pair.a.name} <span className="text-slate-400 font-bold">/</span> {pair.b.name}
+                  </p>
+                  <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest">{pair.reason}</p>
+                </div>
+                <div className="flex gap-2 shrink-0">
+                  <Btn
+                    variant="secondary"
+                    onClick={() => merge(pair.a.id, pair.b.id, pair.a.name, pair.b.name)}
+                    disabled={dupBusy !== null}
+                    className="flex items-center gap-1.5"
+                  >
+                    <GitMerge className="w-3.5 h-3.5" /> Unir en {pair.a.name.split(' ')[0]}
+                  </Btn>
+                  <Btn
+                    variant="secondary"
+                    onClick={() => merge(pair.b.id, pair.a.id, pair.b.name, pair.a.name)}
+                    disabled={dupBusy !== null}
+                    className="flex items-center gap-1.5"
+                  >
+                    <GitMerge className="w-3.5 h-3.5" /> Unir en {pair.b.name.split(' ')[0]}
+                  </Btn>
+                </div>
+              </div>
+            ))}
+          </div>
+          {dupError && <p className="text-rose-600 text-sm font-bold mt-3">{dupError}</p>}
+        </Card>
+      )}
 
       {visible.length === 0 ? (
         <EmptyState icon={Users} title="Sin clientes" hint="Registra tu primer cliente para poder crear préstamos." />

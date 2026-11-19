@@ -45,6 +45,7 @@ interface DataState {
   voidPayment: (paymentId: string, reason: string) => Promise<void>;
   logActivity: (input: ActivityInput) => Promise<CollectionActivity>;
   updateSettings: (patch: Partial<AppSettings>) => Promise<AppSettings>;
+  mergeClients: (keepId: string, mergeId: string) => Promise<void>;
   updateProfileRole: (userId: string, role: UserRole) => Promise<void>;
   toggleProfileActive: (userId: string, active: boolean) => Promise<void>;
   savePaymentMethod: (input: { id?: string; name: string; active?: boolean }) => Promise<PaymentMethodOption>;
@@ -203,6 +204,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return saved;
   }, [adapter, wrap]);
 
+  const mergeClients = useCallback(async (keepId: string, mergeId: string) => {
+    await wrap(() => adapter.mergeClients(keepId, mergeId));
+    await load();
+  }, [adapter, wrap, load]);
+
   const linkClientToProfile = useCallback((userId: string, clientId: string | null) =>
     wrap(() => adapter.linkClientToProfile(userId, clientId)), [adapter, wrap]);
 
@@ -228,7 +234,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       loading, error, clients, loans, installments, payments, activities,
       auditEvents, profiles, roles, applications, settings, stats, paymentMethods,
       notificationTemplates, notifications, paymentChannels,
-      createClient, updateClient, createLoan, cancelLoan, restructureLoan, assignLoan,
+      createClient, updateClient, mergeClients, createLoan, cancelLoan, restructureLoan, assignLoan,
       registerPayment, voidPayment, logActivity, updateSettings,
       updateProfileRole, toggleProfileActive, createApplication, updateApplicationStatus,
       savePaymentMethod, saveNotificationTemplate, createNotification, setNotificationStatus,

@@ -151,6 +151,9 @@ export class ApiDataAdapter implements DataAdapter {
   voidPayment(paymentId: string, reason: string): Promise<void> { return this.op('voidPayment', { id: paymentId, reason }); }
   logActivity(input: ActivityInput): Promise<CollectionActivity> { return this.op('logActivity', input); }
   updateSettings(patch: Partial<AppSettings>): Promise<AppSettings> { return this.op('updateSettings', patch); }
+  mergeClients(keepId: string, mergeId: string): Promise<void> {
+    return this.op('mergeClients', { keepId, mergeId });
+  }
   updateProfileRole(userId: string, role: string): Promise<void> { return this.op('updateProfileRole', { userId, role }); }
   toggleProfileActive(userId: string, active: boolean): Promise<void> { return this.op('toggleProfileActive', { userId, active }); }
   savePaymentMethod(input: { id?: string; name: string; active?: boolean }): Promise<PaymentMethodOption> {

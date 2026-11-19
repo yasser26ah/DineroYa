@@ -401,6 +401,53 @@ export const buildPromiseAgenda = (
   return rows.sort((a, b) => b.daysLate - a.daysLate || a.clientName.localeCompare(b.clientName));
 };
 
+// --- Duplicados de clientes ------------------------------------------------
+
+const normDocument = (value?: string | null) => (value ?? '').replace(/[^a-z0-9]/gi, '').toLowerCase();
+const normPhone = (value?: string | null) => (value ?? '').replace(/\D/g, '').slice(-7);
+const normEmail = (value?: string | null) => (value ?? '').trim().toLowerCase();
+
+export interface DuplicatePair {
+  a: Client;
+  b: Client;
+  reason: string;
+}
+
+/** Motivos por los que dos fichas parecen la misma persona. */
+export const duplicateReason = (
+  a: Pick<Client, 'document' | 'phone' | 'email'>,
+  b: Pick<Client, 'document' | 'phone' | 'email'>,
+): string | null => {
+  if (normDocument(a.document) && normDocument(a.document) === normDocument(b.document)) return 'mismo documento';
+  if (normPhone(a.phone) && normPhone(a.phone) === normPhone(b.phone)) return 'mismo teléfono';
+  if (normEmail(a.email) && normEmail(a.email) === normEmail(b.email)) return 'mismo email';
+  return null;
+};
+
+/** Pares de fichas activas que probablemente son la misma persona. */
+export const findClientDuplicatePairs = (clients: Client[]): DuplicatePair[] => {
+  const active = clients.filter(c => c.active);
+  const pairs: DuplicatePair[] = [];
+  for (let i = 0; i < active.length; i++) {
+    for (let j = i + 1; j < active.length; j++) {
+      const reason = duplicateReason(active[i], active[j]);
+      if (reason) pairs.push({ a: active[i], b: active[j], reason });
+    }
+  }
+  return pairs;
+};
+
+/** ¿Ya existe una ficha con este documento? (bloquea el alta duplicada) */
+export const findClientByDocument = (
+  clients: Client[],
+  document?: string | null,
+  excludeId?: string,
+): Client | undefined => {
+  const target = normDocument(document);
+  if (!target) return undefined;
+  return clients.find(c => c.id !== excludeId && c.active && normDocument(c.document) === target);
+};
+
 // --- Evaluación de solicitudes ----------------------------------------------
 
 export interface ApplicationScore {

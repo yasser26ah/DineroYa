@@ -562,6 +562,10 @@ export class SupabaseAdapter implements DataAdapter {
     if (error) throw new Error(error.message);
   }
 
+  async mergeClients(): Promise<void> {
+    throw new Error('La fusión de fichas está disponible en la versión en la nube (Sites).');
+  }
+
   async linkClientToProfile(userId: string, clientId: string | null): Promise<void> {
     const { error } = await this.db.from('profiles').update({ client_id: clientId }).eq('id', userId);
     if (error) throw new Error(error.message);

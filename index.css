@@ -1,1 +1,18 @@
 @import "tailwindcss";
+
+/* Impresión: solo se imprime el documento abierto (.print-area). */
+@media print {
+  body { background: #fff !important; }
+  body > * { visibility: hidden; }
+  .print-area, .print-area * { visibility: visible; }
+  .print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    padding: 0;
+    background: #fff;
+    color: #0f172a;
+  }
+  .no-print { display: none !important; }
+}
