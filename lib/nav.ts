@@ -1,7 +1,13 @@
 // ============================================================================
 // DineroYa — Modelo de navegación
 // Una sola fuente de verdad para pestañas, subsecciones, títulos y rutas.
-// Las rutas heredadas (Notificaciones, Caja, Canales, Auditoría) se resuelven
+// 
+// Jerarquía actual:
+//  · Notificaciones vive dentro de Cobranza del Día (collections/notifications).
+//  · Canales de pago y Log viven dentro de Configuración (settings/channels, settings/log).
+//  · Caja ya no forma parte del producto: su ruta heredada redirige a dashboard
+//    y no tiene pantalla propia.
+// Las rutas heredadas (notificaciones, caja, canales, auditoría/audit) se resuelven
 // aquí, para que ningún enlace viejo rompa al cambiar la jerarquía.
 // ============================================================================
 
