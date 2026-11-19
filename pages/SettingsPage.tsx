@@ -5,7 +5,7 @@
 // aquí, con todas sus funciones originales intactas.
 // ============================================================================
 import React, { useState } from 'react';
-import { Settings as SettingsIcon, Download, Database, Upload, Cloud, CheckCircle2, CreditCard } from 'lucide-react';
+import { Settings as SettingsIcon, Download, Database, Upload, Cloud, CheckCircle2, CreditCard, LogOut } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import { Card, PageHeader, Btn, Field, inputCls } from '../components/ui';
@@ -77,7 +77,7 @@ export const SettingsPage: React.FC<{
   onSectionChange: (section: SettingsSection) => void;
 }> = ({ section, onSectionChange }) => {
   const { settings, updateSettings, clients, loans, installments, payments, activities, paymentMethods, savePaymentMethod, importBackup } = useData();
-  const { isSupabase, mode } = useAuth();
+  const { isSupabase, mode, signOut } = useAuth();
   const [saved, setSaved] = useState(false);
   const [importMsg, setImportMsg] = useState<string | null>(null);
   const [newMethod, setNewMethod] = useState('');
@@ -290,6 +290,23 @@ export const SettingsPage: React.FC<{
             {importMsg && (
               <div className="mt-5 bg-sky-50 text-sky-700 text-sm font-medium p-4 rounded-2xl">{importMsg}</div>
             )}
+          </Card>
+
+          <Card className="p-6" data-reveal>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+              <div className="p-3 bg-rose-50 text-rose-600 rounded-2xl shrink-0">
+                <LogOut className="w-5 h-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-base font-black text-slate-900">Cerrar sesión</h3>
+                <p className="text-slate-400 text-[11px] font-bold">
+                  Sal del panel en este dispositivo. Tus datos quedan guardados.
+                </p>
+              </div>
+              <Btn variant="secondary" onClick={signOut} className="w-full sm:w-auto flex items-center justify-center gap-2 shrink-0">
+                <LogOut className="w-4 h-4" /> Cerrar sesión
+              </Btn>
+            </div>
           </Card>
 
           <Card className="p-8" data-reveal>
