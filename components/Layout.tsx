@@ -6,7 +6,7 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   Activity, Menu, X, PieChart, Users, HandCoins, Settings, LogOut, HardDrive, Cloud,
-  ClipboardList, Home, Banknote, BarChart3, Wallet, Bell, CreditCard, ScrollText,
+  ClipboardList, Home, Banknote, BarChart3, Wallet, Bell, CreditCard, ScrollText, CalendarClock,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
@@ -169,6 +169,12 @@ export const Layout: React.FC<{
       kind: 'bell',
       children: [
         { id: 'collections-today', label: 'Casos de hoy', icon: HandCoins, target: { tab: 'collections', collections: 'today', settings: 'general' } },
+        {
+          id: 'collections-promises',
+          label: 'Promesas de pago',
+          icon: CalendarClock,
+          target: { tab: 'collections', collections: 'promises', settings: 'general' },
+        },
         {
           id: 'collections-notifications',
           label: 'Notificaciones',

@@ -14,6 +14,7 @@ import {
   agingBucket,
   restructureSchedule,
   splitInstallmentsForRestructure,
+  buildPromiseAgenda,
 } from '../.local/test-build/modules.mjs';
 
 const loan = (overrides = {}) => ({
@@ -125,6 +126,63 @@ test('la mora no se cobra sobre cuotas pagadas ni préstamos cancelados', () => 
 test('la mora no se mezcla entre clientes', () => {
   const installments = [installment({ dueDate: '2026-01-01' })];
   assert.equal(clientMoraAmount('c2', [loan()], installments, 5, '2026-01-31'), 0);
+});
+
+// --- Agenda de promesas ----------------------------------------------------
+
+const promise = (overrides = {}) => ({
+  id: 'a1', loanId: 'l1', clientId: 'c1', type: 'call', result: 'contacted_promised',
+  promiseDate: '2026-01-10', activityDate: '2026-01-05T10:00:00.000Z',
+  ...overrides,
+});
+
+const client = { id: 'c1', name: 'Ana Pérez', phone: '3001234567' };
+
+test('la agenda clasifica la promesa como incumplida, de hoy o futura', () => {
+  const installments = [installment({ dueDate: '2026-01-01' })];
+  const overdue = buildPromiseAgenda([loan()], [client], installments, [], [promise()], '2026-01-15');
+  assert.equal(overdue[0].status, 'overdue');
+  assert.equal(overdue[0].daysLate, 5);
+  assert.equal(overdue[0].outstanding, 1000);
+
+  const today = buildPromiseAgenda([loan()], [client], installments, [], [promise()], '2026-01-10');
+  assert.equal(today[0].status, 'today');
+
+  const upcoming = buildPromiseAgenda([loan()], [client], installments, [], [promise()], '2026-01-08');
+  assert.equal(upcoming[0].status, 'upcoming');
+});
+
+test('un pago desde la fecha prometida saca la promesa de la agenda', () => {
+  const installments = [installment({ dueDate: '2026-01-01' })];
+  const payments = [{
+    id: 'p1', loanId: 'l1', clientId: 'c1', amount: 500, method: 'cash',
+    paymentDate: '2026-01-12', balanceAfter: 500, createdAt: '2026-01-12T10:00:00.000Z',
+  }];
+  assert.equal(buildPromiseAgenda([loan()], [client], installments, payments, [promise()], '2026-01-15').length, 0);
+});
+
+test('la agenda ignora gestiones sin compromiso y préstamos ya pagados', () => {
+  const installments = [installment({ dueDate: '2026-01-01' })];
+  const noPromise = [promise({ result: 'no_answer', promiseDate: null })];
+  assert.equal(buildPromiseAgenda([loan()], [client], installments, [], noPromise, '2026-01-15').length, 0);
+  assert.equal(
+    buildPromiseAgenda([loan({ status: 'paid' })], [client], installments, [], [promise()], '2026-01-15').length,
+    0,
+  );
+});
+
+test('la agenda ordena primero las promesas más incumplidas', () => {
+  const installments = [installment({ dueDate: '2026-01-01' })].concat([
+    installment({ id: 'i2', loanId: 'l2', dueDate: '2026-01-01' }),
+  ]);
+  const loans = [loan(), loan({ id: 'l2', clientId: 'c2' })];
+  const clients = [client, { id: 'c2', name: 'Beto Ruiz', phone: '3009999999' }];
+  const activities = [
+    promise({ promiseDate: '2026-01-12' }),
+    promise({ id: 'a2', loanId: 'l2', clientId: 'c2', promiseDate: '2026-01-02' }),
+  ];
+  const rows = buildPromiseAgenda(loans, clients, installments, [], activities, '2026-01-15');
+  assert.deepEqual(rows.map(r => r.clientName), ['Beto Ruiz', 'Ana Pérez']);
 });
 
 // --- Riesgo y envejecimiento ----------------------------------------------

@@ -16,6 +16,7 @@ const ROUTES = [
   [target({ tab: 'portal' }), '#/portal'],
   [target({ tab: 'dashboard' }), '#/resumen'],
   [target({ tab: 'collections' }), '#/cobranza'],
+  [target({ tab: 'collections', collections: 'promises' }), '#/cobranza/promesas'],
   [target({ tab: 'collections', collections: 'notifications' }), '#/cobranza/notificaciones'],
   [target({ tab: 'loans' }), '#/prestamos'],
   [target({ tab: 'payments' }), '#/recaudos'],

@@ -343,6 +343,64 @@ export const attachLastActivity = (row: AgingRow, activities: CollectionActivity
   };
 };
 
+// --- Agenda de promesas de pago ------------------------------------------------
+
+export interface PromiseRow {
+  loanId: string;
+  clientId: string;
+  clientName: string;
+  clientPhone: string;
+  assignedTo?: string | null;
+  promiseDate: string;
+  /** Días desde la promesa: >0 incumplida, 0 hoy, <0 futura. */
+  daysLate: number;
+  outstanding: number;
+  status: 'overdue' | 'today' | 'upcoming';
+  notes?: string | null;
+}
+
+/**
+ * Promesas de pago vigentes: la última gestión del préstamo fue un compromiso
+ * y todavía no se registró ningún pago desde esa fecha.
+ */
+export const buildPromiseAgenda = (
+  loans: Loan[],
+  clients: Client[],
+  installments: Installment[],
+  payments: Payment[],
+  activities: CollectionActivityLike[],
+  today = todayISO(),
+): PromiseRow[] => {
+  const rows: PromiseRow[] = [];
+
+  loans
+    .filter(loan => loan.status === 'active' || loan.status === 'overdue')
+    .forEach(loan => {
+      const last = lastActivityFor(loan.id, activities);
+      if (!last?.promiseDate || last.result !== 'contacted_promised') return;
+      const fulfilled = payments.some(p => p.loanId === loan.id && p.paymentDate >= last.promiseDate!);
+      if (fulfilled) return;
+      const outstanding = loanOutstanding(loan.id, installments);
+      if (outstanding <= 0) return;
+      const client = clients.find(c => c.id === loan.clientId);
+      const daysLate = daysBetween(last.promiseDate, today);
+      rows.push({
+        loanId: loan.id,
+        clientId: loan.clientId,
+        clientName: client?.name ?? '—',
+        clientPhone: client?.phone ?? '',
+        assignedTo: loan.assignedTo,
+        promiseDate: last.promiseDate,
+        daysLate,
+        outstanding,
+        status: daysLate > 0 ? 'overdue' : daysLate === 0 ? 'today' : 'upcoming',
+        notes: last.notes ?? null,
+      });
+    });
+
+  return rows.sort((a, b) => b.daysLate - a.daysLate || a.clientName.localeCompare(b.clientName));
+};
+
 // --- Resumen de cartera -----------------------------------------------------------
 
 export const buildPortfolioSummary = (

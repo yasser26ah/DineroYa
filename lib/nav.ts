@@ -24,7 +24,7 @@ export type TabId =
   | 'settings';
 
 export type SettingsSection = 'general' | 'channels' | 'log' | 'data';
-export type CollectionsSection = 'today' | 'notifications';
+export type CollectionsSection = 'today' | 'promises' | 'notifications';
 
 export interface NavTarget {
   tab: TabId;
@@ -93,6 +93,7 @@ const SETTINGS_BY_SLUG: Record<string, SettingsSection> = {
 export function targetToHash(target: NavTarget): string {
   const base = `#/${TAB_SLUGS[target.tab]}`;
   if (target.tab === 'collections' && target.collections === 'notifications') return `${base}/notificaciones`;
+  if (target.tab === 'collections' && target.collections === 'promises') return `${base}/promesas`;
   if (target.tab === 'settings') {
     const slug = SETTINGS_SLUGS[target.settings];
     return slug ? `${base}/${slug}` : base;
@@ -119,6 +120,7 @@ export function targetFromHash(hash: string): NavTarget {
 
   const target: NavTarget = { ...DEFAULT_TARGET, tab };
   if (tab === 'collections' && second === 'notificaciones') target.collections = 'notifications';
+  if (tab === 'collections' && second === 'promesas') target.collections = 'promises';
   if (tab === 'settings' && second) target.settings = SETTINGS_BY_SLUG[second] ?? 'general';
   return target;
 }

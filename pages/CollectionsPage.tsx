@@ -2,7 +2,7 @@
 // DineroYa — Cobranza del Día (módulo central de gestión de cobro)
 // ============================================================================
 import React, { useMemo, useState } from 'react';
-import { Phone, MessageSquare, MapPin, StickyNote, Banknote, Clock, CheckCircle2, History } from 'lucide-react';
+import { Phone, MessageSquare, MapPin, StickyNote, Banknote, Clock, CheckCircle2, History, CalendarClock } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import { Card, PageHeader, EmptyState, Btn } from '../components/ui';
@@ -11,7 +11,7 @@ import { NotificationsPage } from './NotificationsPage';
 import { useReveal } from '../lib/motion';
 import { CollectionsSection } from '../lib/nav';
 import { PaymentModal, ActivityModal, WhatsAppDraftModal } from '../components/modals';
-import { bucketLabel, lastActivityFor } from '../lib/engine';
+import { bucketLabel, buildPromiseAgenda, lastActivityFor } from '../lib/engine';
 import { fmtDate, fmtMoney, fmtDateTime } from '../lib/format';
 import { ACTIVITY_RESULT_LABELS, Client, Installment, Loan } from '../types';
 import { generateOverdueMessage, generateReminderMessage } from '../services/gemini';
@@ -30,7 +30,7 @@ export const CollectionsPage: React.FC<{
   section: CollectionsSection;
   onSectionChange: (section: CollectionsSection) => void;
 }> = ({ section, onSectionChange }) => {
-  const { stats, loans, installments, clients, activities, settings, profiles, notifications } = useData();
+  const { stats, loans, installments, payments, clients, activities, settings, profiles, notifications } = useData();
   const revealRef = useReveal([section]);
   const { user } = useAuth();
   const cur = settings.currency;
@@ -50,6 +50,15 @@ export const CollectionsPage: React.FC<{
   }, [stats.dueToday, stats.brokenPromises, mineOnly, user]);
 
   const brokenSet = new Set(stats.brokenPromises.map(bp => bp.loanId));
+
+  // Promesas de pago vigentes, ordenadas de la más incumplida a la futura.
+  const promiseAgenda = useMemo(() => {
+    const rows = buildPromiseAgenda(loans, clients, installments, payments, activities);
+    return mineOnly && user ? rows.filter(r => !r.assignedTo || r.assignedTo === user.id) : rows;
+  }, [loans, clients, installments, payments, activities, mineOnly, user]);
+
+  const promisesLate = promiseAgenda.filter(p => p.status === 'overdue').length;
+  const promisesToday = promiseAgenda.filter(p => p.status === 'today').length;
 
   const openWhatsApp = async (loan: Loan, client: Client) => {
     setBusyLoan(loan.id);
@@ -73,7 +82,9 @@ export const CollectionsPage: React.FC<{
         title="Cobranza del Día"
         subtitle={section === 'today'
           ? 'Casos que requieren gestión hoy: vencidos, por vencer hoy y compromisos incumplidos'
-          : 'Recordatorios automáticos por WhatsApp y correo, con registro de envíos'}
+          : section === 'promises'
+            ? 'Compromisos de pago acordados con cada cliente y cuánto se han incumplido'
+            : 'Recordatorios automáticos por WhatsApp y correo, con registro de envíos'}
         actions={section === 'today' ? (
           <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-2xl p-1.5 shadow-sm">
             <button
@@ -95,6 +106,7 @@ export const CollectionsPage: React.FC<{
       <SectionTabs
         tabs={[
           { id: 'today', label: 'Casos de hoy', count: queue.length },
+          { id: 'promises', label: 'Promesas', count: promisesLate + promisesToday },
           { id: 'notifications', label: 'Notificaciones', count: pendingNotifications },
         ]}
         value={section}
@@ -104,6 +116,75 @@ export const CollectionsPage: React.FC<{
 
       {section === 'notifications' ? (
         <NotificationsPage embedded />
+      ) : section === 'promises' ? (
+        <div className="flex flex-col gap-5">
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { label: 'Incumplidas', value: promisesLate, tone: 'text-rose-600 bg-rose-50 border-rose-100' },
+              { label: 'Para hoy', value: promisesToday, tone: 'text-amber-600 bg-amber-50 border-amber-100' },
+              { label: 'Próximas', value: promiseAgenda.length - promisesLate - promisesToday, tone: 'text-indigo-600 bg-indigo-50 border-indigo-100' },
+            ].map(box => (
+              <div key={box.label} className={`rounded-2xl border p-4 ${box.tone}`}>
+                <p className="text-2xl font-black">{box.value}</p>
+                <p className="text-[10px] font-black uppercase tracking-widest opacity-70">{box.label}</p>
+              </div>
+            ))}
+          </div>
+
+          {promiseAgenda.length === 0 ? (
+            <EmptyState
+              icon={CalendarClock}
+              title="Sin promesas pendientes"
+              hint="Cuando una gestión incluya fecha de compromiso, el caso aparece aquí hasta que el cliente pague."
+            />
+          ) : (
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+              {promiseAgenda.map(row => {
+                const loan = loans.find(l => l.id === row.loanId);
+                const client = clients.find(c => c.id === row.clientId);
+                if (!loan || !client) return null;
+                const badge = row.status === 'overdue'
+                  ? { text: `Incumplida hace ${row.daysLate} día(s)`, cls: 'bg-rose-600 text-white' }
+                  : row.status === 'today'
+                    ? { text: 'Prometió pagar hoy', cls: 'bg-amber-500 text-white' }
+                    : { text: `En ${Math.abs(row.daysLate)} día(s)`, cls: 'bg-indigo-600 text-white' };
+
+                return (
+                  <Card key={row.loanId} data-reveal className={`p-6 border-2 ${row.status === 'overdue' ? 'border-rose-100 bg-rose-50/20' : 'border-slate-100'}`}>
+                    <div className="flex justify-between items-start mb-4 gap-3">
+                      <div className="min-w-0">
+                        <h4 className="font-black text-lg text-slate-900 truncate">{client.name}</h4>
+                        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                          <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-lg ${badge.cls}`}>{badge.text}</span>
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                            Compromiso {fmtDate(row.promiseDate)}
+                          </span>
+                        </div>
+                        {row.notes && <p className="text-xs text-slate-500 font-medium mt-2 line-clamp-2">{row.notes}</p>}
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Saldo</p>
+                        <p className="text-2xl font-black text-slate-900">{fmtMoney(row.outstanding, cur)}</p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2">
+                      <Btn variant="secondary" onClick={() => setModal({ kind: 'activity', loan, client })}>
+                        <span className="flex items-center justify-center gap-1.5"><Phone className="w-3.5 h-3.5" /> Gestionar</span>
+                      </Btn>
+                      <Btn variant="secondary" onClick={() => openWhatsApp(loan, client)} disabled={busyLoan === loan.id}>
+                        <span className="flex items-center justify-center gap-1.5"><MessageSquare className="w-3.5 h-3.5" /> WhatsApp</span>
+                      </Btn>
+                      <Btn onClick={() => setModal({ kind: 'payment', loan, client })}>
+                        <span className="flex items-center justify-center gap-1.5"><Banknote className="w-3.5 h-3.5" /> Cobrar</span>
+                      </Btn>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </div>
       ) : (
       <>
       {myProfile && (
